@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Project Monitor</title>
+    @vite(['resources/js/app.js'])
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+    <style>
+        *{box-sizing:border-box}body{margin:0;background:#070b14;color:#f8fafc;font-family:Inter,ui-sans-serif,system-ui,sans-serif}.wrap{max-width:1600px;margin:auto;padding:30px}.header{display:flex;justify-content:space-between;align-items:end;margin-bottom:24px}.eyebrow{font-size:11px;letter-spacing:.2em;color:#38bdf8;font-weight:800;text-transform:uppercase}.title{font-size:34px;font-weight:850;margin:5px 0}.muted{color:#94a3b8}.clock{text-align:right}.time{font-size:30px;font-weight:800}.live{display:inline-flex;align-items:center;gap:7px;color:#86efac;font-size:12px;font-weight:700}.dot{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 12px #4ade80}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.kpi,.card{background:#0d1320;border:1px solid #1e293b;border-radius:18px}.kpi{padding:20px}.kpi-label{font-size:12px;color:#94a3b8}.kpi-value{font-size:32px;font-weight:850;margin-top:8px}.main{display:grid;grid-template-columns:1.35fr .65fr;gap:18px}.card{padding:20px}.card h2{font-size:16px;margin:0 0 18px}.chart-wrap{height:260px}.projects{display:grid;grid-template-columns:1fr 1fr;gap:12px}.project{padding:15px;border:1px solid #1e293b;border-radius:14px;background:#0a101b}.phead{display:flex;justify-content:space-between;gap:10px}.pname{font-weight:800}.client{font-size:12px;color:#94a3b8;margin-top:3px}.badge{font-size:10px;padding:4px 8px;border-radius:99px;background:#172554;color:#93c5fd;height:max-content}.badge.completed{background:#052e16;color:#86efac}.badge.on_hold{background:#422006;color:#fdba74}.progress{height:7px;background:#1e293b;border-radius:99px;margin-top:13px;overflow:hidden}.bar{height:100%;background:#38bdf8;border-radius:99px;transition:width .4s}.foot{display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-top:7px}.updated{position:fixed;right:20px;bottom:20px;background:#0f172a;border:1px solid #334155;padding:10px 14px;border-radius:10px;font-size:12px;color:#93c5fd;opacity:0;transition:.25s}.updated.show{opacity:1}@media(max-width:1000px){.kpis{grid-template-columns:1fr 1fr}.main{grid-template-columns:1fr}.projects{grid-template-columns:1fr}}@media(max-width:600px){.wrap{padding:16px}.header{align-items:flex-start;flex-direction:column}.clock{text-align:left}.kpis{grid-template-columns:1fr 1fr}.title{font-size:25px}}
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <header class="header">
+        <div><div class="eyebrow">Tazaka Management</div><div class="title">Executive Project Monitor</div><div class="muted">Status proyek perusahaan · live monitoring</div></div>
+        <div class="clock"><div id="clock" class="time">--:--:--</div><div class="live"><span class="dot"></span> REALTIME</div></div>
+    </header>
+
+    <section class="kpis">
+        <div class="kpi"><div class="kpi-label">TOTAL PROJECT</div><div class="kpi-value" id="total">0</div></div>
+        <div class="kpi"><div class="kpi-label">RUNNING</div><div class="kpi-value" id="running">0</div></div>
+        <div class="kpi"><div class="kpi-label">COMPLETED</div><div class="kpi-value" id="completed">0</div></div>
+        <div class="kpi"><div class="kpi-label">AVG PROGRESS</div><div class="kpi-value"><span id="average">0</span>%</div></div>
+    </section>
+
+    <section class="main">
+        <div class="card"><h2>Project Performance</h2><div class="chart-wrap"><canvas id="progressChart"></canvas></div></div>
+        <div class="card"><h2>Status Distribution</h2><div class="chart-wrap"><canvas id="statusChart"></canvas></div></div>
+    </section>
+
+    <section class="card" style="margin-top:18px"><h2>Active Projects</h2><div id="projects" class="projects"></div></section>
+</div>
+<div id="updated" class="updated">Data project diperbarui</div>
+
+<script>
+const initialProjects = @json($projects);
+let progressChart;
+let statusChart;
+
+function statusLabel(status){return {running:'Running',completed:'Completed',on_hold:'On Hold'}[status] ?? status;}
+
+function render(projects, summary = null){
+    const s = summary ?? {
+        total: projects.length,
+        running: projects.filter(p => p.status === 'running').length,
+        completed: projects.filter(p => p.status === 'completed').length,
+        on_hold: projects.filter(p => p.status === 'on_hold').length,
+        average_progress: projects.length ? Math.round(projects.reduce((a,p)=>a+Number(p.progress||0),0)/projects.length) : 0,
+    };
+    document.getElementById('total').textContent = s.total;
+    document.getElementById('running').textContent = s.running;
+    document.getElementById('completed').textContent = s.completed;
+    document.getElementById('average').textContent = s.average_progress;
+
+    const sorted = [...projects].sort((a,b)=>Number(b.progress)-Number(a.progress));
+    const labels = sorted.map(p=>p.name);
+    const values = sorted.map(p=>Number(p.progress));
+    if(progressChart) progressChart.destroy();
+    progressChart = new Chart(document.getElementById('progressChart'), {type:'bar',data:{labels,datasets:[{label:'Progress %',data:values,borderRadius:7}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,max:100,grid:{color:'#1e293b'}},y:{grid:{display:false}}}}});
+
+    if(statusChart) statusChart.destroy();
+    statusChart = new Chart(document.getElementById('statusChart'), {type:'doughnut',data:{labels:['Running','Completed','On Hold'],datasets:[{data:[s.running,s.completed,s.on_hold],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{position:'bottom'}}}});
+
+    document.getElementById('projects').innerHTML = projects.length ? projects.map(p => `<article class="project"><div class="phead"><div><div class="pname">${escapeHtml(p.name)}</div><div class="client">${escapeHtml(p.client_name)}</div></div><span class="badge ${p.status}">${statusLabel(p.status)}</span></div><div class="progress"><div class="bar" style="width:${Number(p.progress)}%"></div></div><div class="foot"><span>${Number(p.progress)}% progress</span><span>Target: ${p.target_date ?? '-'}</span></div></article>`).join('') : '<div class="muted">Belum ada project.</div>';
+}
+
+function escapeHtml(value){return String(value ?? '').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function showUpdated(){const el=document.getElementById('updated');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1800);}
+function clock(){document.getElementById('clock').textContent = new Intl.DateTimeFormat('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());}
+setInterval(clock,1000);clock();render(initialProjects);
+
+window.Echo.channel('projects').listen('.project.updated', () => {
+    fetch('{{ route('monitor.data') }}', {headers:{'Accept':'application/json'}}).then(r=>r.json()).then(data=>{render(data.projects,data.summary);showUpdated();});
+});
+</script>
+</body>
+</html>
