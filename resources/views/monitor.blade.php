@@ -13,7 +13,7 @@
 </head>
 <body>
 <div class="wrap">
-    <header class="header"><div><div class="eyebrow">Tazaka Management</div><div class="title">Executive Project Monitor</div><div class="muted">Status proyek perusahaan · monitoring</div></div></header>
+    <header class="header"><div><div class="eyebrow">Tazaka Management</div><div class="title">Executive Project Monitor</div></div></header>
     <section class="kpis"><div class="kpi"><div class="kpi-label">TOTAL PROJECT</div><div class="kpi-value" id="total">0</div></div><div class="kpi"><div class="kpi-label">RUNNING</div><div class="kpi-value" id="running">0</div></div><div class="kpi"><div class="kpi-label">COMPLETED</div><div class="kpi-value" id="completed">0</div></div><div class="kpi"><div class="kpi-label">AVG PROGRESS</div><div class="kpi-value"><span id="average">0</span>%</div></div></section>
     <section class="main"><div class="card"><h2>Project Type</h2><div class="chart-wrap"><canvas id="projectTypeChart"></canvas></div></div><div class="card"><h2>Overall Progress</h2><div class="chart-wrap"><canvas id="progressChart"></canvas></div></div></section>
     <section class="card map-card"><h2>Project Locations · Indonesia</h2><div class="map-wrap"><div id="projectMap" class="map"></div></div></section>
