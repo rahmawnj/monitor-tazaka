@@ -12,5 +12,6 @@ Route::get('/dashboard', fn () => redirect()->route('admin.projects.index'))->na
 Route::get('/admin/projects', [ProjectController::class, 'index'])->name('admin.projects.index');
 Route::post('/admin/projects', [ProjectController::class, 'store'])->name('admin.projects.store');
 Route::put('/admin/projects/{project}', [ProjectController::class, 'update'])->name('admin.projects.update');
+Route::patch('/admin/projects/{project}/progress', [ProjectController::class, 'updateProgress'])->name('admin.projects.progress');
 Route::post('/admin/projects/reorder', [ProjectController::class, 'reorder'])->name('admin.projects.reorder');
 Route::delete('/admin/projects/{project}', [ProjectController::class, 'destroy'])->name('admin.projects.destroy');
