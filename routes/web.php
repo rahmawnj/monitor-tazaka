@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectImageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [MonitorController::class, 'index'])->name('monitor');
@@ -18,3 +19,7 @@ Route::put('/admin/projects/{project}', [ProjectController::class, 'update'])->n
 Route::patch('/admin/projects/{project}/progress', [ProjectController::class, 'updateProgress'])->name('admin.projects.progress');
 Route::post('/admin/projects/reorder', [ProjectController::class, 'reorder'])->name('admin.projects.reorder');
 Route::delete('/admin/projects/{project}', [ProjectController::class, 'destroy'])->name('admin.projects.destroy');
+
+Route::post('/admin/projects/{project}/images', [ProjectImageController::class, 'store'])->name('admin.projects.images.store');
+Route::post('/admin/projects/{project}/images/reorder', [ProjectImageController::class, 'reorder'])->name('admin.projects.images.reorder');
+Route::delete('/admin/project-images/{projectImage}', [ProjectImageController::class, 'destroy'])->name('admin.project-images.destroy');
