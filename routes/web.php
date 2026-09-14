@@ -15,6 +15,9 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.store');
 
 Route::middleware('hardcoded.auth')->group(function () {
+    // Keep the dashboard route for the login redirect, but send it to admin projects.
+    Route::get('/dashboard', fn () => redirect()->route('admin.projects.index'))->name('dashboard');
+
     Route::get('/admin/projects', [ProjectController::class, 'index'])->name('admin.projects.index');
     Route::post('/admin/projects', [ProjectController::class, 'store'])->name('admin.projects.store');
     Route::put('/admin/projects/{project}', [ProjectController::class, 'update'])->name('admin.projects.update');
