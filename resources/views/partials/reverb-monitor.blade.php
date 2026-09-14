@@ -1,3 +1,15 @@
+<style>
+    .header {
+        position: sticky;
+        top: 0;
+        z-index: 900;
+        padding: 14px 0;
+        margin-bottom: 24px;
+        background: rgba(7, 11, 20, .88);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+    }
+</style>
 <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
 <script>
 (() => {
@@ -21,6 +33,7 @@
     };
 
     const pusher = new Pusher(@json(env('REVERB_APP_KEY')), {
+        cluster: 'mt1',
         wsHost: @json(env('REVERB_HOST', '127.0.0.1')),
         wsPort: Number(@json(env('REVERB_PORT', 8085))),
         wssPort: Number(@json(env('REVERB_PORT', 8085))),
