@@ -20,6 +20,7 @@ class ProjectController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
+        $data['progress'] = 0;
         $data['sort_order'] = ((int) Project::max('sort_order')) + 1;
         Project::create($data);
 
@@ -28,7 +29,9 @@ class ProjectController extends Controller
 
     public function update(Request $request, Project $project): RedirectResponse
     {
-        $project->update($this->validated($request));
+        $data = $this->validated($request);
+        $data['progress'] = $request->integer('progress', $project->progress);
+        $project->update($data);
 
         return back()->with('success', 'Project berhasil diperbarui.');
     }
@@ -74,7 +77,7 @@ class ProjectController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'client' => ['required', 'string', 'max:255'],
             'project_type' => ['required', 'in:tazaka_order,subcontract,external'],
-            'progress' => ['required', 'integer', 'min:0', 'max:100'],
+            'progress' => ['sometimes', 'integer', 'min:0', 'max:100'],
             'target_completion_date' => ['nullable', 'date'],
             'project_month' => ['nullable', 'regex:/^\d{4}-\d{2}$/'],
             'description' => ['nullable', 'string'],
