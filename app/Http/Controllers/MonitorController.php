@@ -11,20 +11,21 @@ class MonitorController extends Controller
     public function index(): View
     {
         return view('monitor', [
-            'projects' => Project::latest()->get(),
+            'projects' => Project::orderBy('sort_order')->orderByDesc('id')->get(),
         ]);
     }
 
     public function data(): JsonResponse
     {
+        $projects = Project::orderBy('sort_order')->orderByDesc('id')->get();
+
         return response()->json([
-            'projects' => Project::latest()->get(),
+            'projects' => $projects,
             'summary' => [
-                'total' => Project::count(),
-                'running' => Project::where('status', 'running')->count(),
-                'completed' => Project::where('status', 'completed')->count(),
-                'on_hold' => Project::where('status', 'on_hold')->count(),
-                'average_progress' => (int) round(Project::avg('progress') ?? 0),
+                'total' => $projects->count(),
+                'running' => $projects->where('progress', '<', 100)->count(),
+                'completed' => $projects->where('progress', '>=', 100)->count(),
+                'average_progress' => (int) round($projects->avg('progress') ?? 0),
             ],
         ]);
     }
