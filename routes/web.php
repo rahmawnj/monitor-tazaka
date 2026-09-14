@@ -44,13 +44,7 @@ Route::post('/logout', function (Request $request) {
 })->name('logout');
 
 // Project management requires the PIN session.
-Route::middleware(function (Request $request, $next) {
-    if ($request->session()->get('pin_authenticated') !== true) {
-        return redirect()->route('login');
-    }
-
-    return $next($request);
-})->group(function () {
+Route::middleware('pin.auth')->group(function () {
     Route::get('/dashboard', fn () => redirect()->route('admin.projects.index'))->name('dashboard');
     Route::get('/admin/projects', [ProjectController::class, 'index'])->name('admin.projects.index');
     Route::post('/admin/projects', [ProjectController::class, 'store'])->name('admin.projects.store');
