@@ -24,14 +24,16 @@ class AuthController extends Controller
         ]);
 
         $admin = config('auth.admin');
-        $login = $credentials['login'];
-        $username = (string) ($admin['username'] ?? '');
-        $email = (string) ($admin['email'] ?? '');
-        $password = (string) ($admin['password'] ?? '');
+$login = trim($credentials['login']);
+$username = trim((string) ($admin['username'] ?? ''));
+$email = trim((string) ($admin['email'] ?? ''));
+$password = (string) ($admin['password'] ?? '');
 
-        $validLogin = hash_equals($username, $login) || hash_equals($email, $login);
-        $validPassword = hash_equals($password, $credentials['password']);
+$validLogin = ($username !== '' && $login === $username)
+    || ($email !== '' && $login === $email);
 
+$validPassword = $password !== ''
+    && $credentials['password'] === $password;
         if (!$validLogin || !$validPassword) {
             return back()
                 ->withErrors(['login' => 'Username/email atau password salah.'])
