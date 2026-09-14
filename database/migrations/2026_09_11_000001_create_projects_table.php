@@ -12,11 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('client');
-            $table->enum('project_type', [
-                'tazaka_order',
-                'subcontract',
-                'external',
-            ]);
+            $table->enum('project_type', ['tazaka_order', 'subcontract', 'external']);
             $table->unsignedTinyInteger('progress')->default(0);
             $table->date('target_completion_date')->nullable();
             $table->date('project_month')->nullable();
@@ -24,6 +20,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->string('location')->nullable();
             $table->json('latlong')->nullable();
+            $table->unsignedInteger('sort_order')->default(0)->index();
             $table->timestamps();
         });
     }
