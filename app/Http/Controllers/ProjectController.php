@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ProjectUpdated;
 use App\Models\Project;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -37,7 +38,9 @@ class ProjectController extends Controller
         $data = $this->validated($request);
         $data['progress'] = 0;
         $data['sort_order'] = ((int) Project::max('sort_order')) + 1;
-        Project::create($data);
+        $project = Project::create($data);
+
+        ProjectUpdated::dispatch('created', $project->id);
 
         return redirect()->route('admin.projects.index')->with('success', 'Project berhasil ditambahkan.');
     }
@@ -47,6 +50,8 @@ class ProjectController extends Controller
         $data = $this->validated($request);
         $data['progress'] = $request->integer('progress', $project->progress);
         $project->update($data);
+
+        ProjectUpdated::dispatch('updated', $project->id);
 
         return redirect()->route('admin.projects.show', $project)->with('success', 'Project berhasil diperbarui.');
     }
@@ -58,6 +63,8 @@ class ProjectController extends Controller
         ]);
 
         $project->update(['progress' => $data['progress']]);
+
+        ProjectUpdated::dispatch('progress', $project->id);
 
         return response()->json([
             'success' => true,
@@ -76,12 +83,17 @@ class ProjectController extends Controller
             Project::whereKey($id)->update(['sort_order' => $position]);
         }
 
+        ProjectUpdated::dispatch('reordered');
+
         return response()->json(['success' => true]);
     }
 
     public function destroy(Project $project): RedirectResponse
     {
+        $projectId = $project->id;
         $project->delete();
+
+        ProjectUpdated::dispatch('deleted', $projectId);
 
         return redirect()->route('admin.projects.index')->with('success', 'Project berhasil dihapus.');
     }
