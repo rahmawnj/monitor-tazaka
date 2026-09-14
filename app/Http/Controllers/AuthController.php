@@ -10,7 +10,7 @@ class AuthController extends Controller
     public function showLogin()
     {
         if (session()->has('user')) {
-            return redirect()->route('admin.projects.index');
+            return redirect()->route('dashboard');
         }
 
         return view('auth.login');
@@ -29,10 +29,8 @@ class AuthController extends Controller
         $email = (string) ($admin['email'] ?? '');
         $password = (string) ($admin['password'] ?? '');
 
-        // Credentials are intentionally stored and compared as plain text from .env.
-        $validLogin = ($username !== '' && $login === $username)
-            || ($email !== '' && $login === $email);
-        $validPassword = $password !== '' && $credentials['password'] === $password;
+        $validLogin = hash_equals($username, $login) || hash_equals($email, $login);
+        $validPassword = hash_equals($password, $credentials['password']);
 
         if (!$validLogin || !$validPassword) {
             return back()
@@ -49,7 +47,7 @@ class AuthController extends Controller
         $request->session()->put('user', $user);
         $request->session()->put('authenticated', true);
 
-        return redirect()->intended(route('admin.projects.index'));
+        return redirect()->intended(route('dashboard'));
     }
 
     public function logout(Request $request)
