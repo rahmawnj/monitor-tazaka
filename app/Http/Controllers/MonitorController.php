@@ -10,9 +10,9 @@ class MonitorController extends Controller
 {
     public function index(): View
     {
-        return view('monitor', [
-            'projects' => Project::orderBy('sort_order')->orderByDesc('id')->get(),
-        ]);
+        $projects = Project::orderBy('sort_order')->orderByDesc('id')->get();
+
+        return view('monitor', compact('projects'));
     }
 
     public function data(): JsonResponse
