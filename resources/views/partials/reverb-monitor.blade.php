@@ -3,6 +3,7 @@
     .project.water-update { animation: waterCardFloat .75s cubic-bezier(.22, .8, .25, 1); }
     .project.water-update::before { animation: waterDropRipple 1.05s cubic-bezier(.16, .8, .3, 1); }
     .project.water-update .bar { box-shadow: 0 0 16px rgba(255,255,255,.45); }
+    .detail-bar span.realtime-update { box-shadow: 0 0 18px rgba(255,255,255,.7); }
     @keyframes waterCardFloat { 0% { transform: translateY(0) scale(1); } 18% { transform: translateY(-3px) scale(1.008); } 55% { transform: translateY(1px) scale(.998); } 100% { transform: translateY(0) scale(1); } }
     @keyframes waterDropRipple { 0% { transform: scale(.72); opacity: .05; } 20% { opacity: .34; } 100% { transform: scale(1.65); opacity: 0; } }
     @media (prefers-reduced-motion: reduce) { .project.water-update, .project.water-update::before { animation: none !important; } }
@@ -25,8 +26,7 @@
         projects.forEach(project => {
             const card = document.querySelector(`.project[data-project-id="${Number(project.id)}"]`);
             const bar = card?.querySelector('.bar');
-            if (!bar) return;
-            bar.style.background = progressGradient(project.progress);
+            if (bar) bar.style.background = progressGradient(project.progress);
         });
     };
 
@@ -36,6 +36,46 @@
         const value = Number.parseInt(text.replace(/[^0-9-]/g, ''), 10);
         if (Number.isFinite(id) && Number.isFinite(value)) previousProgress.set(id, value);
     });
+
+    const updateDetailModal = (project, oldProgress, newProgress) => {
+        const backdrop = document.getElementById('projectDetail');
+        if (!backdrop?.classList.contains('open')) return;
+        if (Number(backdrop.dataset.projectId) !== Number(project.id)) return;
+
+        const text = document.getElementById('detailProgressText');
+        const bar = document.getElementById('detailProgressBar');
+        const from = Math.max(0, Math.min(100, Number(oldProgress) || 0));
+        const to = Math.max(0, Math.min(100, Number(newProgress) || 0));
+        if (!bar || !text) return;
+
+        bar.classList.add('realtime-update');
+        bar.style.transition = 'none';
+        bar.style.width = `${from}%`;
+        bar.style.background = progressGradient(to);
+        text.textContent = `${from}%`;
+        void bar.offsetWidth;
+
+        requestAnimationFrame(() => {
+            bar.style.transition = 'width 1.5s cubic-bezier(.16,1,.3,1), box-shadow .8s ease';
+            bar.style.width = `${to}%`;
+            const start = performance.now();
+            const duration = 1500;
+            const tick = now => {
+                const progress = Math.min(1, (now - start) / duration);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                text.textContent = `${Math.round(from + (to - from) * eased)}%`;
+                if (progress < 1) requestAnimationFrame(tick);
+                else text.textContent = `${to}%`;
+            };
+            requestAnimationFrame(tick);
+        });
+
+        window.setTimeout(() => {
+            bar.classList.remove('realtime-update');
+            bar.style.transition = 'width .4s ease';
+            bar.style.background = progressGradient(to);
+        }, 1700);
+    };
 
     const animateProgressBar = (projectId, oldProgress, newProgress) => {
         const card = document.querySelector(`.project[data-project-id="${Number(projectId)}"]`);
@@ -104,10 +144,13 @@
             applyProgressColors(data.projects);
             data.projects.forEach(p => previousProgress.set(Number(p.id), Number(p.progress || 0)));
 
-            if (progressChanged) requestAnimationFrame(() => {
-                animateProgressBar(changedId, oldProgress, newProgress);
-                triggerWaterDrop(changedId);
-            });
+            if (changedProject && progressChanged) {
+                updateDetailModal(changedProject, oldProgress, newProgress);
+                requestAnimationFrame(() => {
+                    animateProgressBar(changedId, oldProgress, newProgress);
+                    triggerWaterDrop(changedId);
+                });
+            }
         } catch (error) {
             console.error('Gagal memperbarui monitor realtime:', error);
         }
