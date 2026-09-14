@@ -47,7 +47,7 @@ const initialProjects=@json($projects);let projectTypeChart,progressChart,projec
 const chartColors=['#38bdf8','#a78bfa','#f59e0b','#34d399','#fb7185'];
 const chartTextColor='#e2e8f0';
 function typeLabel(t){return{tazaka_order:'Tazaka Order',subcontract:'Subcontract',external:'External'}[t]??t}
-function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function escapeHtml(v){return String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function formatDate(v){
     if(v===null||v===undefined||String(v).trim()==='')return '-';
     const raw=String(v).slice(0,10);
@@ -72,7 +72,7 @@ function render(projects,summary=null){
     const completed=projects.filter(p=>Number(p.progress||0)>=100).length,running=projects.length-completed;
     if(progressChart)progressChart.destroy();
     progressChart=new Chart(document.getElementById('progressChart'),{type:'doughnut',data:{labels:['Completed','In Progress'],datasets:[{data:[completed,running],backgroundColor:['#34d399','#38bdf8'],borderWidth:2,borderColor:'#0d1320'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{position:'bottom',labels:{color:chartTextColor,padding:16,font:{size:12,weight:'600'}}}}}});
-    const sorted=[...projects].sort((a,b)=>Number(b.progress)-Number(a.progress));
+    const sorted=[...projects];
     document.getElementById('projects').innerHTML=sorted.length?sorted.map((p,i)=>`<article class="project" tabindex="0" role="button" data-project-id="${escapeHtml(p.id??i)}" aria-label="Lihat detail ${escapeHtml(p.name)}"><div class="project-top"><div><div class="project-label">Tazaka Project</div><div class="pname">${escapeHtml(p.name)}</div><div class="client">${escapeHtml(p.client??'')}</div></div><span class="badge">${typeLabel(p.project_type)}</span></div><div class="project-middle"><div class="chip" aria-hidden="true"></div><div class="project-id">PROJECT <strong>#${escapeHtml(p.id??String(i+1).padStart(2,'0'))}</strong></div><div class="project-progress"><div class="progress-label"><span>Progress</span><strong>${Number(p.progress)}%</strong></div><div class="progress"><div class="bar" style="width:${Math.max(0,Math.min(100,Number(p.progress)||0))}%"></div></div></div></div><div class="project-bottom"><div><div class="project-bottom-label">Client</div><div class="project-bottom-value">${escapeHtml(p.client??'-')}</div></div><div style="text-align:right"><div class="project-bottom-label">Target Completion</div><div class="project-bottom-value">${escapeHtml(formatDate(p.target_completion_date))}</div></div></div></article>`).join(''):'<div class="muted">Belum ada project.</div>';
     document.querySelectorAll('.project[data-project-id]').forEach(card=>{const project=projects.find(p=>String(p.id??'')===String(card.dataset.projectId));if(!project)return;card.addEventListener('click',()=>openProjectDetail(project));card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openProjectDetail(project)}})});
 }
