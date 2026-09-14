@@ -20,7 +20,6 @@ class ProjectController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $project = Project::create($this->validated($request));
-
         ProjectUpdated::dispatch($project, 'created');
 
         return back()->with('success', 'Project berhasil ditambahkan.');
@@ -30,7 +29,6 @@ class ProjectController extends Controller
     {
         $project->update($this->validated($request));
         $project->refresh();
-
         ProjectUpdated::dispatch($project, 'updated');
 
         return back()->with('success', 'Project berhasil diperbarui.');
@@ -39,7 +37,6 @@ class ProjectController extends Controller
     public function destroy(Project $project): RedirectResponse
     {
         $project->delete();
-
         ProjectUpdated::dispatch($project, 'deleted');
 
         return back()->with('success', 'Project berhasil dihapus.');
@@ -47,15 +44,28 @@ class ProjectController extends Controller
 
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'client_name' => ['required', 'string', 'max:255'],
-            'started_at' => ['nullable', 'date'],
-            'target_date' => ['nullable', 'date'],
+            'client' => ['required', 'string', 'max:255'],
+            'project_type' => ['required', 'in:tazaka_order,subcontract,external'],
             'progress' => ['required', 'integer', 'min:0', 'max:100'],
-            'status' => ['required', 'in:running,completed,on_hold'],
+            'target_completion_date' => ['nullable', 'date'],
+            'project_month' => ['nullable', 'date'],
             'description' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'lng' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
+
+        $lat = $data['lat'] ?? null;
+        $lng = $data['lng'] ?? null;
+        unset($data['lat'], $data['lng']);
+
+        $data['latlong'] = ($lat !== null && $lng !== null)
+            ? ['lat' => (float) $lat, 'lng' => (float) $lng]
+            : null;
+
+        return $data;
     }
 }
