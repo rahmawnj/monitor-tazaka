@@ -17,6 +17,21 @@ class ProjectController extends Controller
         ]);
     }
 
+    public function create(): View
+    {
+        return view('admin.projects.create');
+    }
+
+    public function show(Project $project): View
+    {
+        return view('admin.projects.show', compact('project'));
+    }
+
+    public function edit(Project $project): View
+    {
+        return view('admin.projects.edit', compact('project'));
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
@@ -24,7 +39,7 @@ class ProjectController extends Controller
         $data['sort_order'] = ((int) Project::max('sort_order')) + 1;
         Project::create($data);
 
-        return back()->with('success', 'Project berhasil ditambahkan.');
+        return redirect()->route('admin.projects.index')->with('success', 'Project berhasil ditambahkan.');
     }
 
     public function update(Request $request, Project $project): RedirectResponse
@@ -33,7 +48,7 @@ class ProjectController extends Controller
         $data['progress'] = $request->integer('progress', $project->progress);
         $project->update($data);
 
-        return back()->with('success', 'Project berhasil diperbarui.');
+        return redirect()->route('admin.projects.show', $project)->with('success', 'Project berhasil diperbarui.');
     }
 
     public function updateProgress(Request $request, Project $project): JsonResponse
@@ -68,7 +83,7 @@ class ProjectController extends Controller
     {
         $project->delete();
 
-        return back()->with('success', 'Project berhasil dihapus.');
+        return redirect()->route('admin.projects.index')->with('success', 'Project berhasil dihapus.');
     }
 
     private function validated(Request $request): array
