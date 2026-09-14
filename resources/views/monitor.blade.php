@@ -21,6 +21,8 @@
 </div>
 <script>
 const initialProjects=@json($projects);let projectTypeChart,progressChart,projectMap,projectMarkers;
+const chartColors=['#38bdf8','#a78bfa','#f59e0b','#34d399','#fb7185'];
+const chartTextColor='#e2e8f0';
 function typeLabel(t){return{tazaka_order:'Tazaka Order',subcontract:'Subcontract',external:'External'}[t]??t}
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function render(projects,summary=null){
@@ -29,10 +31,10 @@ function render(projects,summary=null){
     if(typeof Chart==='undefined'){console.error('Chart.js gagal dimuat');return;}
     const types=['tazaka_order','subcontract','external'];const typeValues=types.map(t=>projects.filter(p=>p.project_type===t).length);
     if(projectTypeChart)projectTypeChart.destroy();
-    projectTypeChart=new Chart(document.getElementById('projectTypeChart'),{type:'pie',data:{labels:types.map(typeLabel),datasets:[{data:typeValues,borderWidth:2,borderColor:'#0d1320'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
+    projectTypeChart=new Chart(document.getElementById('projectTypeChart'),{type:'pie',data:{labels:types.map(typeLabel),datasets:[{data:typeValues,backgroundColor:chartColors,borderWidth:2,borderColor:'#0d1320'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:chartTextColor,padding:16,font:{size:12,weight:'600'}}}}}});
     const completed=projects.filter(p=>Number(p.progress||0)>=100).length,running=projects.length-completed;
     if(progressChart)progressChart.destroy();
-    progressChart=new Chart(document.getElementById('progressChart'),{type:'doughnut',data:{labels:['Completed','In Progress'],datasets:[{data:[completed,running],borderWidth:2,borderColor:'#0d1320'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{position:'bottom'}}}});
+    progressChart=new Chart(document.getElementById('progressChart'),{type:'doughnut',data:{labels:['Completed','In Progress'],datasets:[{data:[completed,running],backgroundColor:['#34d399','#38bdf8'],borderWidth:2,borderColor:'#0d1320'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{position:'bottom',labels:{color:chartTextColor,padding:16,font:{size:12,weight:'600'}}}}}});
     const sorted=[...projects].sort((a,b)=>Number(b.progress)-Number(a.progress));document.getElementById('projects').innerHTML=sorted.length?sorted.map(p=>`<article class="project"><div class="phead"><div><div class="pname">${escapeHtml(p.name)}</div><div class="client">${escapeHtml(p.client??'')}</div></div><span class="badge">${typeLabel(p.project_type)}</span></div><div class="progress"><div class="bar" style="width:${Number(p.progress)}%"></div></div><div class="foot"><span>${Number(p.progress)}% progress</span><span>Target: ${p.target_completion_date??'-'}</span></div></article>`).join(''):'<div class="muted">Belum ada project.</div>';
 }
 function initMap(){
