@@ -9,6 +9,7 @@ class Project extends Model
     protected $fillable = [
         'name', 'client', 'project_type', 'progress', 'target_completion_date',
         'project_month', 'description', 'notes', 'location', 'latlong', 'sort_order',
+        'display_status',
     ];
 
     protected function casts(): array
