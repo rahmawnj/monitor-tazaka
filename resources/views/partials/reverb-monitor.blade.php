@@ -19,7 +19,7 @@
     }
 
     .project.water-update .bar {
-        animation: waterProgressShimmer .9s ease-out;
+        box-shadow: 0 0 14px rgba(103, 232, 249, .65);
     }
 
     @keyframes waterCardFloat {
@@ -35,22 +35,38 @@
         100% { transform: scale(1.65); opacity: 0; }
     }
 
-    @keyframes waterProgressShimmer {
-        0% { filter: brightness(1); }
-        35% { filter: brightness(1.8); }
-        100% { filter: brightness(1); }
-    }
-
     @media (prefers-reduced-motion: reduce) {
         .project.water-update,
-        .project.water-update::before,
-        .project.water-update .bar { animation: none !important; }
+        .project.water-update::before { animation: none !important; }
     }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
 <script>
 (() => {
     let previousProgress = new Map();
+
+    const animateProgressBar = (projectId, oldProgress, newProgress) => {
+        if (!projectId || oldProgress === undefined || oldProgress === newProgress) return;
+
+        const card = document.querySelector(`.project[data-project-id="${Number(projectId)}"]`);
+        if (!card) return;
+
+        const bar = card.querySelector('.bar');
+        if (!bar) return;
+
+        const startWidth = `${Math.max(0, Math.min(100, Number(oldProgress) || 0))}%`;
+        const targetWidth = `${Math.max(0, Math.min(100, Number(newProgress) || 0))}%`;
+
+        bar.style.transition = 'none';
+        bar.style.width = startWidth;
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                bar.style.transition = 'width 1.35s cubic-bezier(.22, .8, .25, 1), box-shadow .7s ease';
+                bar.style.width = targetWidth;
+            });
+        });
+    };
 
     const triggerWaterDrop = (projectId) => {
         if (!projectId) return;
@@ -89,7 +105,10 @@
             );
 
             if (progressChanged) {
-                requestAnimationFrame(() => triggerWaterDrop(changedId));
+                requestAnimationFrame(() => {
+                    animateProgressBar(changedId, oldProgress, newProgress);
+                    triggerWaterDrop(changedId);
+                });
             }
         } catch (error) {
             console.error('Gagal memperbarui monitor realtime:', error);
