@@ -54,8 +54,8 @@
 
         <form method="POST" action="{{ route('login.store') }}">
             @csrf
-            <label for="email">Email</label>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" autocomplete="username" required autofocus>
+            <label for="login">Username / Email</label>
+            <input id="login" type="text" name="login" value="{{ old('login') }}" autocomplete="username" required autofocus>
 
             <label for="password">Password</label>
             <input id="password" type="password" name="password" autocomplete="current-password" required>
