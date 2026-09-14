@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Support\HardcodedUser;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -20,21 +19,27 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'login' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
-        $email = (string) env('ADMIN_EMAIL');
-        $password = (string) env('ADMIN_PASSWORD');
+        $admin = config('auth.admin');
+        $login = $credentials['login'];
+        $username = (string) ($admin['username'] ?? '');
+        $email = (string) ($admin['email'] ?? '');
+        $password = (string) ($admin['password'] ?? '');
 
-        if (! hash_equals($email, $credentials['email']) || ! hash_equals($password, $credentials['password'])) {
+        $validLogin = hash_equals($username, $login) || hash_equals($email, $login);
+        $validPassword = hash_equals($password, $credentials['password']);
+
+        if (!$validLogin || !$validPassword) {
             return back()
-                ->withErrors(['email' => 'Email atau password salah.'])
-                ->onlyInput('email');
+                ->withErrors(['login' => 'Username/email atau password salah.'])
+                ->onlyInput('login');
         }
 
         $user = new HardcodedUser(
-            username: (string) env('ADMIN_USERNAME', 'Admin'),
+            username: $username,
             email: $email,
         );
 
