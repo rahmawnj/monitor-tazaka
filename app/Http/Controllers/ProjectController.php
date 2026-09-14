@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\ProjectUpdated;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,8 +18,7 @@ class ProjectController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $project = Project::create($this->validated($request));
-        ProjectUpdated::dispatch($project, 'created');
+        Project::create($this->validated($request));
 
         return back()->with('success', 'Project berhasil ditambahkan.');
     }
@@ -28,8 +26,6 @@ class ProjectController extends Controller
     public function update(Request $request, Project $project): RedirectResponse
     {
         $project->update($this->validated($request));
-        $project->refresh();
-        ProjectUpdated::dispatch($project, 'updated');
 
         return back()->with('success', 'Project berhasil diperbarui.');
     }
@@ -37,7 +33,6 @@ class ProjectController extends Controller
     public function destroy(Project $project): RedirectResponse
     {
         $project->delete();
-        ProjectUpdated::dispatch($project, 'deleted');
 
         return back()->with('success', 'Project berhasil dihapus.');
     }
