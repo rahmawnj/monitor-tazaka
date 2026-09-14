@@ -11,13 +11,19 @@ return new class extends Migration
         Schema::create('projects', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('client_name');
-            $table->date('started_at')->nullable();
-            $table->date('target_date')->nullable();
+            $table->string('client');
+            $table->enum('project_type', [
+                'tazaka_order',
+                'subcontract',
+                'external',
+            ]);
             $table->unsignedTinyInteger('progress')->default(0);
-            $table->enum('status', ['running', 'completed', 'on_hold'])->default('running');
+            $table->date('target_completion_date')->nullable();
+            $table->date('project_month')->nullable();
             $table->text('description')->nullable();
             $table->text('notes')->nullable();
+            $table->string('location')->nullable();
+            $table->json('latlong')->nullable();
             $table->timestamps();
         });
     }
