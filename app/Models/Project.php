@@ -8,30 +8,24 @@ class Project extends Model
 {
     protected $fillable = [
         'name',
-        'client_name',
-        'started_at',
-        'target_date',
+        'client',
+        'project_type',
         'progress',
-        'status',
+        'target_completion_date',
+        'project_month',
         'description',
         'notes',
+        'location',
+        'latlong',
     ];
 
     protected function casts(): array
     {
         return [
-            'started_at' => 'date',
-            'target_date' => 'date',
+            'target_completion_date' => 'date',
+            'project_month' => 'date',
             'progress' => 'integer',
+            'latlong' => 'array',
         ];
-    }
-
-    public function getStatusLabelAttribute(): string
-    {
-        return match ($this->status) {
-            'completed' => 'Completed',
-            'on_hold' => 'On Hold',
-            default => 'Running',
-        };
     }
 }
