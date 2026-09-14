@@ -50,9 +50,7 @@
 <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
 <script>
 (() => {
-    let previousProgress = new Map(
-        Array.isArray(window.initialProjects) ? window.initialProjects.map(p => [Number(p.id), Number(p.progress || 0)]) : []
-    );
+    let previousProgress = new Map();
 
     const triggerWaterDrop = (projectId) => {
         if (!projectId) return;
@@ -65,7 +63,7 @@
         window.setTimeout(() => card.classList.remove('water-update'), 1200);
     };
 
-    const refreshMonitor = async (event = {}) => {
+    const refreshMonitor = async (event = {}, establishBaseline = false) => {
         try {
             const response = await fetch(@json(route('monitor.data')), {
                 headers: { 'Accept': 'application/json' },
@@ -81,7 +79,7 @@
             const changedProject = data.projects.find(p => Number(p.id) === changedId);
             const oldProgress = changedId ? previousProgress.get(changedId) : undefined;
             const newProgress = changedProject ? Number(changedProject.progress || 0) : undefined;
-            const progressChanged = changedProject && oldProgress !== undefined && oldProgress !== newProgress;
+            const progressChanged = !establishBaseline && changedProject && oldProgress !== undefined && oldProgress !== newProgress;
 
             render(data.projects, data.summary);
             renderMap(data.projects);
@@ -97,11 +95,6 @@
             console.error('Gagal memperbarui monitor realtime:', error);
         }
     };
-
-    window.initialProjects = window.initialProjects || @json($projects);
-    previousProgress = new Map(
-        window.initialProjects.map(p => [Number(p.id), Number(p.progress || 0)])
-    );
 
     const pusher = new Pusher(@json(env('REVERB_APP_KEY')), {
         cluster: 'mt1',
@@ -123,5 +116,8 @@
     pusher.connection.bind('error', (error) => {
         console.error('Koneksi Reverb gagal:', error);
     });
+
+    // Ambil baseline progress dari API tanpa memicu animasi.
+    refreshMonitor({}, true);
 })();
 </script>
