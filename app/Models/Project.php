@@ -7,16 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class Project extends Model
 {
     protected $fillable = [
-        'name',
-        'client',
-        'project_type',
-        'progress',
-        'target_completion_date',
-        'project_month',
-        'description',
-        'notes',
-        'location',
-        'latlong',
+        'name', 'client', 'project_type', 'progress', 'target_completion_date',
+        'project_month', 'description', 'notes', 'location', 'latlong', 'sort_order',
     ];
 
     protected function casts(): array
@@ -26,6 +18,7 @@ class Project extends Model
             'project_month' => 'date',
             'progress' => 'integer',
             'latlong' => 'array',
+            'sort_order' => 'integer',
         ];
     }
 }
