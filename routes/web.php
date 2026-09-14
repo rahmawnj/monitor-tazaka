@@ -4,6 +4,34 @@ use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectImageController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
+
+/*
+|--------------------------------------------------------------------------
+| Storage Files
+|--------------------------------------------------------------------------
+| Serve files from storage/app/public without requiring storage:link.
+*/
+Route::get('/storage/{path}', function (string $path) {
+    $path = str_replace('\\', '/', $path);
+
+    // Prevent path traversal attempts.
+    if (
+        str_contains($path, '..') ||
+        str_starts_with($path, '/') ||
+        str_contains($path, "\0")
+    ) {
+        abort(404);
+    }
+
+    $disk = Storage::disk('public');
+
+    if (!$disk->exists($path)) {
+        abort(404);
+    }
+
+    return response()->file($disk->path($path));
+})->where('path', '.*');
 
 Route::get('/', [MonitorController::class, 'index'])->name('monitor');
 Route::get('/monitor', [MonitorController::class, 'index']);
