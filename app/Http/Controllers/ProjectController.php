@@ -50,13 +50,17 @@ class ProjectController extends Controller
             'project_type' => ['required', 'in:tazaka_order,subcontract,external'],
             'progress' => ['required', 'integer', 'min:0', 'max:100'],
             'target_completion_date' => ['nullable', 'date'],
-            'project_month' => ['nullable', 'date'],
+            'project_month' => ['nullable', 'regex:/^\d{4}-\d{2}$/'],
             'description' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'location' => ['nullable', 'string', 'max:255'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
+
+        if (!empty($data['project_month'])) {
+            $data['project_month'] .= '-01';
+        }
 
         $lat = $data['lat'] ?? null;
         $lng = $data['lng'] ?? null;
