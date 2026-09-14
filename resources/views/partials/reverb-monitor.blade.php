@@ -9,11 +9,63 @@
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
     }
+
+    .project.water-update {
+        animation: waterCardFloat .75s cubic-bezier(.22, .8, .25, 1);
+    }
+
+    .project.water-update::before {
+        animation: waterDropRipple 1.05s cubic-bezier(.16, .8, .3, 1);
+    }
+
+    .project.water-update .bar {
+        animation: waterProgressShimmer .9s ease-out;
+    }
+
+    @keyframes waterCardFloat {
+        0% { transform: translateY(0) scale(1); }
+        18% { transform: translateY(-3px) scale(1.008); }
+        55% { transform: translateY(1px) scale(.998); }
+        100% { transform: translateY(0) scale(1); }
+    }
+
+    @keyframes waterDropRipple {
+        0% { transform: scale(.72); opacity: .05; }
+        20% { opacity: .34; }
+        100% { transform: scale(1.65); opacity: 0; }
+    }
+
+    @keyframes waterProgressShimmer {
+        0% { filter: brightness(1); }
+        35% { filter: brightness(1.8); }
+        100% { filter: brightness(1); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .project.water-update,
+        .project.water-update::before,
+        .project.water-update .bar { animation: none !important; }
+    }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
 <script>
 (() => {
-    const refreshMonitor = async () => {
+    let previousProgress = new Map(
+        Array.isArray(window.initialProjects) ? window.initialProjects.map(p => [Number(p.id), Number(p.progress || 0)]) : []
+    );
+
+    const triggerWaterDrop = (projectId) => {
+        if (!projectId) return;
+        const card = document.querySelector(`.project[data-project-id="${Number(projectId)}"]`);
+        if (!card) return;
+
+        card.classList.remove('water-update');
+        void card.offsetWidth;
+        card.classList.add('water-update');
+        window.setTimeout(() => card.classList.remove('water-update'), 1200);
+    };
+
+    const refreshMonitor = async (event = {}) => {
         try {
             const response = await fetch(@json(route('monitor.data')), {
                 headers: { 'Accept': 'application/json' },
@@ -25,12 +77,31 @@
             const data = await response.json();
             if (!Array.isArray(data.projects)) return;
 
+            const changedId = Number(event.project_id || 0);
+            const changedProject = data.projects.find(p => Number(p.id) === changedId);
+            const oldProgress = changedId ? previousProgress.get(changedId) : undefined;
+            const newProgress = changedProject ? Number(changedProject.progress || 0) : undefined;
+            const progressChanged = changedProject && oldProgress !== undefined && oldProgress !== newProgress;
+
             render(data.projects, data.summary);
             renderMap(data.projects);
+
+            previousProgress = new Map(
+                data.projects.map(p => [Number(p.id), Number(p.progress || 0)])
+            );
+
+            if (progressChanged) {
+                requestAnimationFrame(() => triggerWaterDrop(changedId));
+            }
         } catch (error) {
             console.error('Gagal memperbarui monitor realtime:', error);
         }
     };
+
+    window.initialProjects = window.initialProjects || @json($projects);
+    previousProgress = new Map(
+        window.initialProjects.map(p => [Number(p.id), Number(p.progress || 0)])
+    );
 
     const pusher = new Pusher(@json(env('REVERB_APP_KEY')), {
         cluster: 'mt1',
