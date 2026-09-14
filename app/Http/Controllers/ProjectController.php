@@ -33,6 +33,20 @@ class ProjectController extends Controller
         return back()->with('success', 'Project berhasil diperbarui.');
     }
 
+    public function updateProgress(Request $request, Project $project): JsonResponse
+    {
+        $data = $request->validate([
+            'progress' => ['required', 'integer', 'min:0', 'max:100'],
+        ]);
+
+        $project->update(['progress' => $data['progress']]);
+
+        return response()->json([
+            'success' => true,
+            'progress' => $project->progress,
+        ]);
+    }
+
     public function reorder(Request $request): JsonResponse
     {
         $data = $request->validate([
