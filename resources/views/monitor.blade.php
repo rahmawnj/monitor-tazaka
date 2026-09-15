@@ -3,6 +3,7 @@
 @include('partials.last-updated')
 @include('partials.detail-realtime-sync')
 @include('partials.detail-image-realtime-fix')
+@include('partials.detail-media-fix')
 @include('partials.map-fallback')
 @include('partials.company-brand-fix')
 @include('partials.map-height-fix')
