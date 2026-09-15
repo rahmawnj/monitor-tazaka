@@ -29,11 +29,13 @@
         // Jangan membuat instance Leaflet kedua kalau map lama sudah aktif.
         if (el._leaflet_id) return;
 
+        // Pusat awal diarahkan ke Bandung, Jawa Barat.
+        const bandung = [-6.922222, 107.606944];
         const map = L.map(el, {
             zoomControl: true,
             attributionControl: true,
             scrollWheelZoom: false,
-        }).setView([-2.5, 118], 5);
+        }).setView(bandung, 9);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
@@ -60,12 +62,14 @@
                 bounds.push(latlng);
             });
 
+            // Kalau ada lokasi project, tetap fokus ke lokasi project.
             if (bounds.length === 1) {
                 map.setView(bounds[0], 8);
             } else if (bounds.length > 1) {
                 map.fitBounds(bounds, { padding: [30, 30], maxZoom: 8 });
             } else {
-                map.setView([-2.5, 118], 5);
+                // Kalau belum ada lokasi project, pusatkan ke Bandung.
+                map.setView(bandung, 9);
             }
         }
 
