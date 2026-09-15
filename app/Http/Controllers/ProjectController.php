@@ -90,8 +90,11 @@ class ProjectController extends Controller
             'location' => ['nullable', 'string', 'max:255'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
-            'display_status' => ['required', 'in:visible,hidden'],
+            'display_status' => ['nullable', 'in:visible,hidden'],
         ]);
+
+        // Jika form lama belum mengirim display_status, default project tetap tampil di monitor.
+        $data['display_status'] = $data['display_status'] ?? ($request->route('project')?->display_status ?? 'visible');
 
         if (!empty($data['project_month'])) $data['project_month'] .= '-01';
         $lat = $data['lat'] ?? null;
