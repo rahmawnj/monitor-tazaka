@@ -11,11 +11,23 @@ use Illuminate\View\View;
 
 class ProjectController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        return view('admin.projects.index', [
-            'projects' => Project::orderBy('sort_order')->orderByDesc('id')->get(),
-        ]);
+        $search = trim((string) $request->query('search', ''));
+
+        $projects = Project::query()
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('client', 'like', "%{$search}%")
+                        ->orWhere('location', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('sort_order')
+            ->orderByDesc('id')
+            ->get();
+
+        return view('admin.projects.index', compact('projects', 'search'));
     }
 
     public function create(): View
