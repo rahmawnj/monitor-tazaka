@@ -22,14 +22,24 @@
         return [lat, lng];
     }
 
+    function openProjectDetail(project) {
+        const card = document.querySelector(`.project[data-project-id="${project.id}"]`);
+        if (card) {
+            card.click();
+            return;
+        }
+
+        // Fallback: trigger the same project-detail event used by the monitor.
+        window.dispatchEvent(new CustomEvent('monitor:open-project-detail', {
+            detail: { project }
+        }));
+    }
+
     function initProjectMap() {
         const el = document.getElementById('projectMap');
         if (!el || typeof L === 'undefined') return;
-
-        // Jangan membuat instance Leaflet kedua kalau map lama sudah aktif.
         if (el._leaflet_id) return;
 
-        // Pusat awal diarahkan ke Bandung, Jawa Barat.
         const bandung = [-6.922222, 107.606944];
         const map = L.map(el, {
             zoomControl: true,
@@ -59,16 +69,19 @@
                     '<br>' + escapeHtml(project.client || '-') +
                     '<br>Progress: ' + progress + '%'
                 );
+
+                marker.on('click', function () {
+                    openProjectDetail(project);
+                });
+
                 bounds.push(latlng);
             });
 
-            // Kalau ada lokasi project, tetap fokus ke lokasi project.
             if (bounds.length === 1) {
                 map.setView(bounds[0], 8);
             } else if (bounds.length > 1) {
                 map.fitBounds(bounds, { padding: [30, 30], maxZoom: 8 });
             } else {
-                // Kalau belum ada lokasi project, pusatkan ke Bandung.
                 map.setView(bandung, 9);
             }
         }
