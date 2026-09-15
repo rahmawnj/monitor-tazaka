@@ -1,0 +1,1 @@
+Compatibility note: image reorder route is named admin.projects.images.reorder. No route should be removed.
