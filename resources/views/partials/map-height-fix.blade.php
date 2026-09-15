@@ -86,15 +86,28 @@
             const project = projects().find(item => Number(item.id) === id) || projects()[index];
             if (!project) return;
 
+            const month = formatMonth(project.project_month);
+            const target = formatDate(project.target_completion_date);
+
             const chip = card.querySelector('.chip');
             if (chip) {
-                chip.innerHTML = `MONTH<strong>${formatMonth(project.project_month)}</strong>`;
-                chip.setAttribute('aria-label', `Project month ${formatMonth(project.project_month)}`);
+                const current = chip.dataset.cardValue || '';
+                const next = `MONTH|${month}`;
+                if (current !== next) {
+                    chip.innerHTML = `MONTH<strong>${month}</strong>`;
+                    chip.dataset.cardValue = next;
+                    chip.setAttribute('aria-label', `Project month ${month}`);
+                }
             }
 
             const projectId = card.querySelector('.project-id');
             if (projectId) {
-                projectId.innerHTML = `TARGET<strong>${formatDate(project.target_completion_date)}</strong>`;
+                const current = projectId.dataset.cardValue || '';
+                const next = `TARGET|${target}`;
+                if (current !== next) {
+                    projectId.innerHTML = `TARGET<strong>${target}</strong>`;
+                    projectId.dataset.cardValue = next;
+                }
             }
         });
     };
@@ -104,7 +117,9 @@
 
         const container = document.getElementById('projects');
         if (container) {
-            new MutationObserver(applyCardData).observe(container, { childList: true, subtree: true });
+            // Hanya pantau card baru dari render realtime. Jangan observe subtree,
+            // karena applyCardData sendiri mengubah innerHTML dan bisa memicu loop.
+            new MutationObserver(applyCardData).observe(container, { childList: true });
         }
 
         window.addEventListener('monitor:projects-updated', applyCardData);
