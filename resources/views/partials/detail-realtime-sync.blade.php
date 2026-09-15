@@ -1,65 +1,126 @@
 <script>
 (() => {
     let progressAnimationFrame = null;
+    let previousProjects = [];
+    let initialized = false;
+    let notificationTimer = null;
 
-    const animateDetailProgress = target => {
-        const progressText = document.getElementById('detailProgressText');
-        const progressBar = document.getElementById('detailProgressBar');
-        if (!progressText && !progressBar) return;
+    const clampProgress = value => Math.max(0, Math.min(100, Number(value) || 0));
 
-        const end = Math.max(0, Math.min(100, Number(target) || 0));
-        const start = Math.max(0, Math.min(100, Number(
-            progressText?.dataset.progressValue ??
-            String(progressText?.textContent || '').replace(/[^0-9.-]/g, '')
-        ) || 0));
-
-        if (progressAnimationFrame) cancelAnimationFrame(progressAnimationFrame);
-
-        // If there is no actual change, just keep the current state.
+    const animateNumber = (element, from, to, duration = 900) => {
+        if (!element) return;
+        const start = clampProgress(from);
+        const end = clampProgress(to);
         if (start === end) {
-            if (progressText) {
-                progressText.textContent = end + '%';
-                progressText.dataset.progressValue = String(end);
-            }
-            if (progressBar) progressBar.style.width = end + '%';
+            element.textContent = end + '%';
+            element.dataset.progressValue = String(end);
             return;
         }
 
-        const duration = 850;
         const started = performance.now();
         const ease = t => 1 - Math.pow(1 - t, 3);
-
-        // Start the bar from the currently displayed percentage, then smoothly
-        // move it to the new percentage instead of jumping directly.
-        if (progressBar) {
-            progressBar.style.transition = 'none';
-            progressBar.style.width = start + '%';
-            void progressBar.offsetWidth;
-            progressBar.style.transition = `width ${duration}ms cubic-bezier(.22,1,.36,1)`;
-            progressBar.style.width = end + '%';
-        }
-
         const step = now => {
             const t = Math.min(1, (now - started) / duration);
             const value = Math.round(start + (end - start) * ease(t));
+            element.textContent = value + '%';
+            element.dataset.progressValue = String(value);
+            if (t < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    };
 
-            if (progressText) {
-                progressText.textContent = value + '%';
-                progressText.dataset.progressValue = String(value);
-            }
+    const animateCardProgress = (card, from, to) => {
+        if (!card) return;
+        const bar = card.querySelector('.bar');
+        const text = card.querySelector('.progress-label strong');
+        const start = clampProgress(from);
+        const end = clampProgress(to);
 
-            if (t < 1) {
-                progressAnimationFrame = requestAnimationFrame(step);
-            } else {
-                progressAnimationFrame = null;
-                if (progressText) {
-                    progressText.textContent = end + '%';
-                    progressText.dataset.progressValue = String(end);
-                }
-            }
+        if (bar) {
+            bar.style.transition = 'none';
+            bar.style.width = start + '%';
+            void bar.offsetWidth;
+            requestAnimationFrame(() => {
+                bar.style.transition = 'width 900ms cubic-bezier(.22,1,.36,1)';
+                bar.style.width = end + '%';
+            });
+        }
+
+        if (text) {
+            text.textContent = start + '%';
+            text.dataset.progressValue = String(start);
+            animateNumber(text, start, end, 900);
+        }
+    };
+
+    const getNotification = () => {
+        let el = document.getElementById('monitorChangeNotification');
+        if (el) return el;
+
+        el = document.createElement('div');
+        el.id = 'monitorChangeNotification';
+        el.style.cssText = [
+            'position:fixed',
+            'right:26px',
+            'top:26px',
+            'z-index:6000',
+            'min-width:300px',
+            'max-width:430px',
+            'padding:15px 17px',
+            'border:1px solid rgba(56,189,248,.38)',
+            'border-radius:16px',
+            'background:rgba(10,18,32,.96)',
+            'box-shadow:0 18px 50px rgba(0,0,0,.42)',
+            'backdrop-filter:blur(14px)',
+            'transform:translateY(-14px) scale(.97)',
+            'opacity:0',
+            'pointer-events:none',
+            'transition:opacity .25s ease,transform .3s cubic-bezier(.22,1,.36,1)',
+            'font-family:Inter,ui-sans-serif,system-ui,sans-serif'
+        ].join(';');
+        el.innerHTML = '<div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7dd3fc;font-weight:800;margin-bottom:5px">Project Updated</div><div data-notification-project style="font-size:14px;color:#f8fafc;font-weight:800"></div><div data-notification-detail style="font-size:11px;color:#94a3b8;margin-top:4px"></div>';
+        document.body.appendChild(el);
+        return el;
+    };
+
+    const showNotification = (project, action = 'updated', oldProject = null) => {
+        const el = getNotification();
+        const projectName = project?.name || oldProject?.name || 'Project';
+        const labels = {
+            created: 'Project ditambahkan',
+            updated: 'Project diperbarui',
+            progress: 'Progress diperbarui',
+            reordered: 'Urutan project diperbarui',
+            deleted: 'Project dihapus',
         };
 
-        progressAnimationFrame = requestAnimationFrame(step);
+        el.querySelector('[data-notification-project]').textContent = projectName;
+        el.querySelector('[data-notification-detail]').textContent = labels[action] || 'Project diperbarui';
+        clearTimeout(notificationTimer);
+        requestAnimationFrame(() => {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0) scale(1)';
+        });
+        notificationTimer = setTimeout(() => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(-14px) scale(.97)';
+        }, 3200);
+    };
+
+    const animateChangedCards = () => {
+        const current = Array.isArray(window.__monitorProjects) ? window.__monitorProjects : [];
+        const oldById = new Map(previousProjects.map(p => [Number(p.id), p]));
+
+        current.forEach(project => {
+            const oldProject = oldById.get(Number(project.id));
+            if (!oldProject) return;
+            const oldProgress = clampProgress(oldProject.progress);
+            const newProgress = clampProgress(project.progress);
+            if (oldProgress === newProgress) return;
+
+            const card = document.querySelector(`.project[data-project-id="${Number(project.id)}"]`);
+            animateCardProgress(card, oldProgress, newProgress);
+        });
     };
 
     const syncDetailFields = (projects) => {
@@ -120,19 +181,77 @@
         animateDetailProgress(project.progress);
     };
 
-    const handleProjects = projects => syncDetailFields(Array.isArray(projects) ? projects : []);
+    const animateDetailProgress = target => {
+        const progressText = document.getElementById('detailProgressText');
+        const progressBar = document.getElementById('detailProgressBar');
+        if (!progressText && !progressBar) return;
+
+        const end = clampProgress(target);
+        const start = clampProgress(Number(
+            progressText?.dataset.progressValue ??
+            String(progressText?.textContent || '').replace(/[^0-9.-]/g, '')
+        ) || 0);
+
+        if (progressAnimationFrame) cancelAnimationFrame(progressAnimationFrame);
+
+        if (start === end) {
+            if (progressText) {
+                progressText.textContent = end + '%';
+                progressText.dataset.progressValue = String(end);
+            }
+            if (progressBar) progressBar.style.width = end + '%';
+            return;
+        }
+
+        const duration = 850;
+        const started = performance.now();
+        const ease = t => 1 - Math.pow(1 - t, 3);
+
+        if (progressBar) {
+            progressBar.style.transition = 'none';
+            progressBar.style.width = start + '%';
+            void progressBar.offsetWidth;
+            progressBar.style.transition = `width ${duration}ms cubic-bezier(.22,1,.36,1)`;
+            progressBar.style.width = end + '%';
+        }
+
+        const step = now => {
+            const t = Math.min(1, (now - started) / duration);
+            const value = Math.round(start + (end - start) * ease(t));
+
+            if (progressText) {
+                progressText.textContent = value + '%';
+                progressText.dataset.progressValue = String(value);
+            }
+
+            if (t < 1) {
+                progressAnimationFrame = requestAnimationFrame(step);
+            } else {
+                progressAnimationFrame = null;
+                if (progressText) {
+                    progressText.textContent = end + '%';
+                    progressText.dataset.progressValue = String(end);
+                }
+            }
+        };
+
+        progressAnimationFrame = requestAnimationFrame(step);
+    };
 
     try {
         const current = Array.isArray(window.__monitorProjects) ? window.__monitorProjects : [];
+        previousProjects = current.slice();
         let projects = current;
 
         Object.defineProperty(window, '__monitorProjects', {
             configurable: true,
             get: () => projects,
             set: value => {
-                projects = Array.isArray(value) ? value : [];
+                const next = Array.isArray(value) ? value : [];
+                previousProjects = projects.slice();
+                projects = next;
                 window.dispatchEvent(new CustomEvent('monitor:projects-updated', {
-                    detail: projects
+                    detail: { previous: previousProjects, projects: next }
                 }));
             }
         });
@@ -141,8 +260,19 @@
     }
 
     window.addEventListener('monitor:projects-updated', event => {
-        handleProjects(event.detail);
+        const detail = event.detail || {};
+        handleProjects(detail.projects || []);
     });
+
+    const projectsContainer = document.getElementById('projects');
+    if (projectsContainer) {
+        const observer = new MutationObserver(() => {
+            requestAnimationFrame(() => {
+                animateChangedCards();
+            });
+        });
+        observer.observe(projectsContainer, { childList: true });
+    }
 
     const originalFetch = window.fetch.bind(window);
     window.fetch = async (...args) => {
@@ -165,6 +295,11 @@
         return response;
     };
 
+    const handleProjects = projects => syncDetailFields(Array.isArray(projects) ? projects : []);
+
     handleProjects(window.__monitorProjects || []);
+
+    // Initial render must not produce a notification.
+    initialized = true;
 })();
 </script>
