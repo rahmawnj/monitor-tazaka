@@ -55,40 +55,42 @@
 
 <script>
 (() => {
-    const profile = document.getElementById('profile');
-    const profileButton = document.getElementById('profileButton');
-    if (profile && profileButton) {
-        profileButton.addEventListener('click', event => {
-            event.stopPropagation();
-            const open = profile.classList.toggle('open');
-            profileButton.setAttribute('aria-expanded', open ? 'true' : 'false');
-        });
+    const init = () => {
+        const profile = document.getElementById('profile');
+        const profileButton = document.getElementById('profileButton');
 
-        document.addEventListener('click', () => {
-            profile.classList.remove('open');
-            profileButton.setAttribute('aria-expanded', 'false');
-        });
-    }
-
-    if (window.location.pathname === '/admin/projects') {
-        const tabs = document.querySelector('.tabs');
-        if (tabs && !tabs.querySelector('.admin-project-search')) {
-            const params = new URLSearchParams(window.location.search);
-            const currentSearch = params.get('search') || '';
-            const form = document.createElement('form');
-            form.className = 'admin-project-search';
-            form.method = 'GET';
-            form.action = '/admin/projects';
-            form.innerHTML = `<input type="search" name="search" value="${currentSearch.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="Cari project..." aria-label="Cari project"><button type="submit">Cari</button>`;
-            form.addEventListener('submit', () => {
-                const input = form.querySelector('input');
-                if (input) {
-                    const value = input.value.trim();
-                    form.action = value ? '/admin/projects?tab=all' : '/admin/projects?tab=all';
-                }
+        if (profile && profileButton) {
+            profileButton.addEventListener('click', event => {
+                event.stopPropagation();
+                const open = profile.classList.toggle('open');
+                profileButton.setAttribute('aria-expanded', open ? 'true' : 'false');
             });
-            tabs.appendChild(form);
+
+            document.addEventListener('click', () => {
+                profile.classList.remove('open');
+                profileButton.setAttribute('aria-expanded', 'false');
+            });
         }
+
+        if (window.location.pathname === '/admin/projects') {
+            const tabs = document.querySelector('.tabs');
+            if (tabs && !tabs.querySelector('.admin-project-search')) {
+                const params = new URLSearchParams(window.location.search);
+                const currentSearch = params.get('search') || '';
+                const form = document.createElement('form');
+                form.className = 'admin-project-search';
+                form.method = 'GET';
+                form.action = '/admin/projects?tab=all';
+                form.innerHTML = `<input type="search" name="search" value="${currentSearch.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="Cari project..." aria-label="Cari project"><button type="submit">Cari</button>`;
+                tabs.appendChild(form);
+            }
+        }
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, { once: true });
+    } else {
+        init();
     }
 })();
 </script>
