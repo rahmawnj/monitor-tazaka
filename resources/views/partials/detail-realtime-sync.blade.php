@@ -6,6 +6,12 @@
 
     const clampProgress = value => Math.max(0, Math.min(100, Number(value) || 0));
 
+    const decodeHtml = value => {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = String(value ?? '');
+        return textarea.value;
+    };
+
     const animateNumber = (element, from, to, duration = 900) => {
         if (!element) return;
         const start = clampProgress(from);
@@ -63,24 +69,12 @@
     const showNotification = (project, action = 'updated', oldProject = null) => {
         const el = getNotification();
         const projectName = project?.name || oldProject?.name || 'Project';
-        const labels = {
-            created: 'Project ditambahkan',
-            updated: 'Project diperbarui',
-            progress: 'Progress diperbarui',
-            reordered: 'Urutan project diperbarui',
-            deleted: 'Project dihapus',
-        };
+        const labels = { created:'Project ditambahkan', updated:'Project diperbarui', progress:'Progress diperbarui', reordered:'Urutan project diperbarui', deleted:'Project dihapus' };
         el.querySelector('[data-notification-project]').textContent = projectName;
         el.querySelector('[data-notification-detail]').textContent = labels[action] || 'Project diperbarui';
         clearTimeout(notificationTimer);
-        requestAnimationFrame(() => {
-            el.style.opacity = '1';
-            el.style.transform = 'translateY(0) scale(1)';
-        });
-        notificationTimer = setTimeout(() => {
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(-14px) scale(.97)';
-        }, 3200);
+        requestAnimationFrame(() => { el.style.opacity='1'; el.style.transform='translateY(0) scale(1)'; });
+        notificationTimer = setTimeout(() => { el.style.opacity='0'; el.style.transform='translateY(-14px) scale(.97)'; }, 3200);
     };
 
     const getChange = (oldProjects, newProjects) => {
@@ -88,13 +82,13 @@
         const newById = new Map(newProjects.map(p => [Number(p.id), p]));
         for (const project of newProjects) {
             const oldProject = oldById.get(Number(project.id));
-            if (!oldProject) return { project, oldProject: null, action: 'created' };
-            if (clampProgress(oldProject.progress) !== clampProgress(project.progress)) return { project, oldProject, action: 'progress' };
-            if (Number(oldProject.sort_order) !== Number(project.sort_order)) return { project, oldProject, action: 'reordered' };
-            if (JSON.stringify(oldProject) !== JSON.stringify(project)) return { project, oldProject, action: 'updated' };
+            if (!oldProject) return { project, oldProject:null, action:'created' };
+            if (clampProgress(oldProject.progress) !== clampProgress(project.progress)) return { project, oldProject, action:'progress' };
+            if (Number(oldProject.sort_order) !== Number(project.sort_order)) return { project, oldProject, action:'reordered' };
+            if (JSON.stringify(oldProject) !== JSON.stringify(project)) return { project, oldProject, action:'updated' };
         }
         for (const oldProject of oldProjects) {
-            if (!newById.has(Number(oldProject.id))) return { project: null, oldProject, action: 'deleted' };
+            if (!newById.has(Number(oldProject.id))) return { project:null, oldProject, action:'deleted' };
         }
         return null;
     };
@@ -120,11 +114,11 @@
         if (!id) return;
         const project = (projects || []).find(p => Number(p.id) === id);
         if (!project) return;
-        const setText = (selector, value) => { const el = document.querySelector(selector); if (el) el.textContent = value ?? '-'; };
-        const setRich = (selector, value) => { const el = document.querySelector(selector); if (el) el.innerHTML = value || '-'; };
-        const typeLabels = { tazaka_order: 'Tazaka Order', subcontract: 'Subcontract', external: 'External' };
-        const formatDate = value => { if (!value) return '-'; const raw = String(value).slice(0, 10); const date = new Date(raw + 'T00:00:00'); if (Number.isNaN(date.getTime())) return String(value); return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(date); };
-        const formatMonth = value => { if (!value) return '-'; const raw = String(value).slice(0, 7); const date = new Date(raw + '-01T00:00:00'); if (Number.isNaN(date.getTime())) return String(value); return new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(date); };
+        const setText = (selector, value) => { const el=document.querySelector(selector); if(el) el.textContent=value ?? '-'; };
+        const setRich = (selector, value) => { const el=document.querySelector(selector); if(el) el.innerHTML=decodeHtml(value || '-'); };
+        const typeLabels = { tazaka_order:'Tazaka Order', subcontract:'Subcontract', external:'External' };
+        const formatDate = value => { if(!value) return '-'; const raw=String(value).slice(0,10); const date=new Date(raw+'T00:00:00'); if(Number.isNaN(date.getTime())) return String(value); return new Intl.DateTimeFormat('id-ID',{day:'2-digit',month:'long',year:'numeric'}).format(date); };
+        const formatMonth = value => { if(!value) return '-'; const raw=String(value).slice(0,7); const date=new Date(raw+'-01T00:00:00'); if(Number.isNaN(date.getTime())) return String(value); return new Intl.DateTimeFormat('id-ID',{month:'long',year:'numeric'}).format(date); };
         setText('#detailTitle', project.name || '-');
         setText('#detailClient', project.client || '-');
         setText('#detailType', typeLabels[project.project_type] || project.project_type || '-');
@@ -137,83 +131,29 @@
     };
 
     const animateDetailProgress = target => {
-        const progressText = document.getElementById('detailProgressText');
-        const progressBar = document.getElementById('detailProgressBar');
-        if (!progressText && !progressBar) return;
-        const end = clampProgress(target);
-        const start = clampProgress(Number(progressText?.dataset.progressValue ?? String(progressText?.textContent || '').replace(/[^0-9.-]/g, '')) || 0);
-        if (progressAnimationFrame) cancelAnimationFrame(progressAnimationFrame);
-        if (start === end) {
-            if (progressText) { progressText.textContent = end + '%'; progressText.dataset.progressValue = String(end); }
-            if (progressBar) progressBar.style.width = end + '%';
-            return;
-        }
-        const duration = 850;
-        const started = performance.now();
-        const ease = t => 1 - Math.pow(1 - t, 3);
-        if (progressBar) {
-            progressBar.style.transition = 'none';
-            progressBar.style.width = start + '%';
-            void progressBar.offsetWidth;
-            progressBar.style.transition = `width ${duration}ms cubic-bezier(.22,1,.36,1)`;
-            progressBar.style.width = end + '%';
-        }
-        const step = now => {
-            const t = Math.min(1, (now - started) / duration);
-            const value = Math.round(start + (end - start) * ease(t));
-            if (progressText) { progressText.textContent = value + '%'; progressText.dataset.progressValue = String(value); }
-            if (t < 1) progressAnimationFrame = requestAnimationFrame(step);
-            else { progressAnimationFrame = null; if (progressText) { progressText.textContent = end + '%'; progressText.dataset.progressValue = String(end); } }
-        };
-        progressAnimationFrame = requestAnimationFrame(step);
+        const progressText=document.getElementById('detailProgressText');
+        const progressBar=document.getElementById('detailProgressBar');
+        if(!progressText && !progressBar) return;
+        const end=clampProgress(target);
+        const start=clampProgress(Number(progressText?.dataset.progressValue ?? String(progressText?.textContent || '').replace(/[^0-9.-]/g,'')) || 0);
+        if(progressAnimationFrame) cancelAnimationFrame(progressAnimationFrame);
+        if(start===end){ if(progressText){progressText.textContent=end+'%';progressText.dataset.progressValue=String(end)} if(progressBar)progressBar.style.width=end+'%'; return; }
+        const duration=850,started=performance.now(),ease=t=>1-Math.pow(1-t,3);
+        if(progressBar){progressBar.style.transition='none';progressBar.style.width=start+'%';void progressBar.offsetWidth;progressBar.style.transition=`width ${duration}ms cubic-bezier(.22,1,.36,1)`;progressBar.style.width=end+'%';}
+        const step=now=>{const t=Math.min(1,(now-started)/duration),value=Math.round(start+(end-start)*ease(t));if(progressText){progressText.textContent=value+'%';progressText.dataset.progressValue=String(value)}if(t<1)progressAnimationFrame=requestAnimationFrame(step);else{progressAnimationFrame=null;if(progressText){progressText.textContent=end+'%';progressText.dataset.progressValue=String(end)}}};
+        progressAnimationFrame=requestAnimationFrame(step);
     };
 
-    let projects = Array.isArray(window.__monitorProjects) ? window.__monitorProjects : [];
-    previousProjects = projects.slice();
-
+    let projects=Array.isArray(window.__monitorProjects)?window.__monitorProjects:[];
+    previousProjects=projects.slice();
     try {
-        Object.defineProperty(window, '__monitorProjects', {
-            configurable: true,
-            get: () => projects,
-            set: value => {
-                const next = Array.isArray(value) ? value : [];
-                const old = projects.slice();
-                const change = getChange(old, next);
-                previousProjects = old;
-                projects = next;
-                if (change && old.length > 0) showNotification(change.project, change.action, change.oldProject);
-                window.dispatchEvent(new CustomEvent('monitor:projects-updated', { detail: { previous: old, projects: next } }));
-            }
-        });
-    } catch (e) {
-        console.warn('Realtime detail state hook gagal:', e);
-    }
-
-    window.addEventListener('monitor:projects-updated', event => {
-        const detail = event.detail || {};
-        syncDetailFields(detail.projects || []);
-    });
-
-    const projectsContainer = document.getElementById('projects');
-    if (projectsContainer) {
-        const observer = new MutationObserver(() => requestAnimationFrame(animateChangedCards));
-        observer.observe(projectsContainer, { childList: true });
-    }
-
-    const originalFetch = window.fetch.bind(window);
-    window.fetch = async (...args) => {
-        const response = await originalFetch(...args);
-        try {
-            const requestUrl = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
-            if (requestUrl.includes('/monitor/data')) {
-                response.clone().json().then(data => syncDetailFields(data?.projects || [])).catch(() => {});
-            }
-        } catch (e) {
-            console.warn('Realtime detail fetch sync gagal:', e);
-        }
-        return response;
-    };
-
-    syncDetailFields(window.__monitorProjects || []);
+        Object.defineProperty(window,'__monitorProjects',{configurable:true,get:()=>projects,set:value=>{const next=Array.isArray(value)?value:[],old=projects.slice(),change=getChange(old,next);previousProjects=old;projects=next;if(change&&old.length>0)showNotification(change.project,change.action,change.oldProject);window.dispatchEvent(new CustomEvent('monitor:projects-updated',{detail:{previous:old,projects:next}}));}});
+    } catch(e){ console.warn('Realtime detail state hook gagal:',e); }
+    window.addEventListener('monitor:projects-updated',event=>{ const detail=event.detail||{}; syncDetailFields(detail.projects||[]); });
+    const projectsContainer=document.getElementById('projects');
+    if(projectsContainer){const observer=new MutationObserver(()=>requestAnimationFrame(animateChangedCards));observer.observe(projectsContainer,{childList:true});}
+    const originalFetch=window.fetch.bind(window);
+    window.fetch=async(...args)=>{const response=await originalFetch(...args);try{const requestUrl=typeof args[0]==='string'?args[0]:(args[0]?.url||'');if(requestUrl.includes('/monitor/data'))response.clone().json().then(data=>syncDetailFields(data?.projects||[])).catch(()=>{});}catch(e){console.warn('Realtime detail fetch sync gagal:',e)}return response};
+    syncDetailFields(window.__monitorProjects||[]);
 })();
 </script>
