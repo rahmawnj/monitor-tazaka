@@ -1,5 +1,9 @@
 @props(['label', 'name', 'value' => null, 'placeholder' => '', 'toolbar' => true])
 
+@php
+    $content = old($name, $value ?? trim((string) $slot));
+@endphp
+
 <div class="field">
     <label for="{{ $name }}">{{ $label }}</label>
     <div class="wysiwyg" data-wysiwyg>
@@ -20,8 +24,8 @@
             role="textbox"
             aria-multiline="true"
             data-placeholder="{{ $placeholder }}"
-        >{!! old($name, $value) !!}</div>
-        <input type="hidden" id="{{ $name }}" name="{{ $name }}" value="{{ old($name, $value) }}">
+        >{!! $content !!}</div>
+        <input type="hidden" id="{{ $name }}" name="{{ $name }}" value="{{ $content }}">
     </div>
     @error($name)<small class="error">{{ $message }}</small>@enderror
 </div>
