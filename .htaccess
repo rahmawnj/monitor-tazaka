@@ -1,0 +1,7 @@
+RewriteEngine On
+
+# Jangan rewrite request yang memang sudah menuju folder public.
+RewriteRule ^public(?:/|$) - [L]
+
+# Laravel public directory secara internal, tanpa menampilkan /public di URL.
+RewriteRule ^(.*)$ public/$1 [L]
