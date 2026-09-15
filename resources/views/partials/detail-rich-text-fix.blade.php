@@ -1,73 +1,93 @@
 <script>
 (() => {
-    const allowedTags = new Set(['P','BR','STRONG','B','EM','I','U','UL','OL','LI','BLOCKQUOTE']);
+    const allowedTags = new Set(['P','BR','STRONG','B','EM','I','U','UL','OL','LI','H1','H2','H3','H4','H5','H6','BLOCKQUOTE','A']);
 
-    const decode = value => {
-        const textarea = document.createElement('textarea');
-        textarea.innerHTML = String(value ?? '');
-        return textarea.value;
+    const decodeHtml = value => {
+        let html = String(value ?? '');
+        for (let i = 0; i < 3; i++) {
+            if (/<\/?[a-z][\s\S]*>/i.test(html)) break;
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = html;
+            const decoded = textarea.value;
+            if (decoded === html) break;
+            html = decoded;
+        }
+        return html;
     };
 
     const sanitizeRichHtml = value => {
-        const source = decode(value);
         const template = document.createElement('template');
-        template.innerHTML = source;
+        template.innerHTML = decodeHtml(value);
 
-        const cleanNode = node => {
-            if (node.nodeType === Node.TEXT_NODE) return document.createTextNode(node.nodeValue || '');
-            if (node.nodeType !== Node.ELEMENT_NODE) return document.createDocumentFragment();
+        const clean = node => {
+            [...node.childNodes].forEach(child => {
+                if (child.nodeType === Node.COMMENT_NODE) {
+                    child.remove();
+                    return;
+                }
+                if (child.nodeType !== Node.ELEMENT_NODE) return;
 
-            if (!allowedTags.has(node.tagName)) {
-                const fragment = document.createDocumentFragment();
-                [...node.childNodes].forEach(child => fragment.appendChild(cleanNode(child)));
-                return fragment;
-            }
+                if (!allowedTags.has(child.tagName)) {
+                    const fragment = document.createDocumentFragment();
+                    while (child.firstChild) fragment.appendChild(child.firstChild);
+                    child.replaceWith(fragment);
+                    clean(node);
+                    return;
+                }
 
-            const clean = document.createElement(node.tagName.toLowerCase());
-            [...node.childNodes].forEach(child => clean.appendChild(cleanNode(child)));
-            return clean;
+                [...child.attributes].forEach(attribute => {
+                    const name = attribute.name.toLowerCase();
+                    const value = attribute.value.trim();
+                    if (name.startsWith('on') || ['style','id','class'].includes(name)) {
+                        child.removeAttribute(attribute.name);
+                    }
+                    if (child.tagName === 'A' && name === 'href' && !/^(https?:|mailto:|tel:|#)/i.test(value)) {
+                        child.removeAttribute('href');
+                    }
+                    if (child.tagName === 'A' && name === 'target' && !['_blank','_self'].includes(value)) {
+                        child.removeAttribute('target');
+                    }
+                });
+
+                if (child.tagName === 'A' && child.getAttribute('target') === '_blank') {
+                    child.setAttribute('rel', 'noopener noreferrer');
+                }
+                clean(child);
+            });
         };
 
-        const fragment = document.createDocumentFragment();
-        [...template.content.childNodes].forEach(node => fragment.appendChild(cleanNode(node)));
-        return fragment;
+        clean(template.content);
+        return template.innerHTML || '<p>Tidak ada informasi.</p>';
     };
 
-    const fixField = id => {
+    const renderField = (id, value, fallback) => {
         const el = document.getElementById(id);
         if (!el) return;
-
-        const raw = el.textContent || '';
-        if (!/<\/?[a-z][^>]*>/i.test(raw) && !/<\/?[a-z][^>]*>/i.test(el.innerHTML)) return;
-
-        const fragment = sanitizeRichHtml(raw || el.innerHTML);
-        el.replaceChildren(fragment);
+        const raw = String(value ?? '').trim();
+        el.innerHTML = raw ? sanitizeRichHtml(raw) : `<p>${fallback}</p>`;
     };
 
-    const fixRichText = () => {
-        fixField('detailDescription');
-        fixField('detailNotes');
+    const renderFromProject = project => {
+        if (!project) return;
+        renderField('detailDescription', project.description, 'Tidak ada deskripsi.');
+        renderField('detailNotes', project.notes, 'Tidak ada catatan.');
     };
 
     document.addEventListener('click', event => {
-        if (event.target.closest('.project') || event.target.closest('#detailClose')) {
-            requestAnimationFrame(() => requestAnimationFrame(fixRichText));
-        }
+        const card = event.target.closest('.project[data-project-id]');
+        if (!card) return;
+        const projects = Array.isArray(window.__monitorProjects) ? window.__monitorProjects : [];
+        const project = projects.find(item => String(item.id) === String(card.dataset.projectId));
+        if (!project) return;
+        requestAnimationFrame(() => renderFromProject(project));
     }, true);
 
-    const modal = document.getElementById('projectDetail');
-    if (modal) {
-        new MutationObserver(fixRichText).observe(modal, {
-            subtree: true,
-            childList: true,
-            characterData: true,
-        });
-    }
-
-    window.addEventListener('monitor:projects-updated', () => {
-        requestAnimationFrame(fixRichText);
+    window.addEventListener('monitor:projects-updated', event => {
+        const modal = document.getElementById('projectDetail');
+        const id = Number(modal?.dataset.projectId || 0);
+        if (!id) return;
+        const project = (event.detail?.projects || []).find(item => Number(item.id) === id);
+        if (project) renderFromProject(project);
     });
-
-    requestAnimationFrame(fixRichText);
 })();
 </script>
