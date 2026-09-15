@@ -30,6 +30,8 @@
         .detail-modal > .detail-section,
         .detail-modal > .detail-hint { width:100%; max-width:100%; }
         .detail-media-grid { position:static; width:100%; display:grid; grid-template-columns:1fr; margin-top:22px !important; order:999 !important; flex-shrink:0; }
+        .detail-gallery { width:100% !important; height:auto !important; min-height:0 !important; }
+        .detail-gallery img { width:100% !important; height:auto !important; min-height:220px; max-height:none; object-fit:cover; }
     }
     @media(max-width:700px) {
         .detail-modal { width:calc(100vw - 20px) !important; padding:22px !important; }
@@ -48,211 +50,81 @@
         const id = Number(modal?.dataset.projectId || 0);
         return projects().find(p => Number(p.id) === id) || null;
     };
-
     const imageUrl = image => {
         if (!image) return '';
         if (image.url) return String(image.url);
         if (!image.path) return '';
         return '/storage/' + String(image.path).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/');
     };
-
-    const sortedImages = project => Array.isArray(project?.images)
-        ? project.images.slice().sort((a,b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
-        : [];
-
+    const sortedImages = project => Array.isArray(project?.images) ? project.images.slice().sort((a,b) => Number(a.sort_order || 0) - Number(b.sort_order || 0)) : [];
     const destroyDetailMap = () => {
-        if (detailMap) {
-            try { detailMap.remove(); } catch (_) {}
-        }
-        detailMap = null;
-        detailMarker = null;
-        mapRetryTimer && clearTimeout(mapRetryTimer);
-        mapRetryTimer = null;
+        if (detailMap) { try { detailMap.remove(); } catch (_) {} }
+        detailMap = null; detailMarker = null;
+        mapRetryTimer && clearTimeout(mapRetryTimer); mapRetryTimer = null;
     };
-
     const ensureCleanMapContainer = el => {
         if (!el) return null;
         if (el._leaflet_id && !detailMap) {
-            const replacement = el.cloneNode(false);
-            replacement.id = 'detailProjectMap';
-            el.replaceWith(replacement);
-            return replacement;
+            const replacement = el.cloneNode(false); replacement.id = 'detailProjectMap'; el.replaceWith(replacement); return replacement;
         }
         return el;
     };
-
     const ensureMedia = () => {
         const modal = document.getElementById('projectDetail');
         const grid = modal?.querySelector('.detail-grid');
-        if (!modal || !grid) return;
-        if (modal.querySelector('.detail-media-grid')) return;
-
+        if (!modal || !grid || modal.querySelector('.detail-media-grid')) return;
         const media = document.createElement('div');
         media.className = 'detail-media-grid';
         media.innerHTML = '<div class="detail-gallery" id="detailGallery"><div class="detail-gallery-empty">Belum ada image project.</div></div><div class="detail-location-map"><div id="detailProjectMap"></div></div>';
         grid.insertAdjacentElement('afterend', media);
-        media.querySelector('.detail-gallery').addEventListener('click', e => {
-            const image = e.target.closest('img');
-            if (image) openLightbox(image.src);
-        });
+        media.querySelector('.detail-gallery').addEventListener('click', e => { const image = e.target.closest('img'); if (image) openLightbox(image.src); });
     };
-
     const renderGallery = () => {
-        const project = currentProject();
         const gallery = document.getElementById('detailGallery');
         if (!gallery) return;
-        const images = sortedImages(project);
-        if (!images.length) {
-            gallery.innerHTML = '<div class="detail-gallery-empty">Belum ada image project.</div>';
-            return;
-        }
+        const images = sortedImages(currentProject());
+        if (!images.length) { gallery.innerHTML = '<div class="detail-gallery-empty">Belum ada image project.</div>'; return; }
         galleryIndex = Math.max(0, Math.min(galleryIndex, images.length - 1));
         gallery.innerHTML = `<img src="${imageUrl(images[galleryIndex])}" alt="Project image" loading="eager"><div class="detail-gallery-nav"><button type="button" data-gallery-prev>‹</button><button type="button" data-gallery-next>›</button></div><div class="detail-gallery-count">${galleryIndex + 1} / ${images.length}</div>`;
         gallery.querySelector('[data-gallery-prev]').onclick = e => { e.stopPropagation(); changeImage(-1); };
         gallery.querySelector('[data-gallery-next]').onclick = e => { e.stopPropagation(); changeImage(1); };
     };
-
     const changeImage = direction => {
-        const images = sortedImages(currentProject());
-        if (!images.length) return;
-        galleryIndex = (galleryIndex + direction + images.length) % images.length;
-        renderGallery();
+        const images = sortedImages(currentProject()); if (!images.length) return;
+        galleryIndex = (galleryIndex + direction + images.length) % images.length; renderGallery();
     };
-
     const renderMap = () => {
-        const modal = document.getElementById('projectDetail');
-        let el = document.getElementById('detailProjectMap');
-        const project = currentProject();
+        const modal = document.getElementById('projectDetail'); let el = document.getElementById('detailProjectMap'); const project = currentProject();
         if (!modal || !el || !modal.classList.contains('open')) return;
-
-        if (!window.L) {
-            if (!mapRetryTimer) {
-                mapRetryTimer = setTimeout(() => {
-                    mapRetryTimer = null;
-                    renderMap();
-                }, 250);
-            }
-            return;
-        }
-
-        let coords = project?.latlong;
-        if (typeof coords === 'string') {
-            try { coords = JSON.parse(coords); } catch (_) { coords = null; }
-        }
-
-        const lat = Number(coords?.lat ?? project?.lat);
-        const lng = Number(coords?.lng ?? project?.lng);
-        if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-            destroyDetailMap();
-            el.innerHTML = '<div class="detail-map-note">Lokasi project belum tersedia.</div>';
-            return;
-        }
-
-        if (detailMap && detailMap.getContainer() !== el) {
-            destroyDetailMap();
-        }
-
-        el = ensureCleanMapContainer(el);
-        if (!el) return;
-
-        const width = el.clientWidth;
-        const height = el.clientHeight;
-        if (width < 20 || height < 20) {
-            requestAnimationFrame(renderMap);
-            return;
-        }
-
+        if (!window.L) { if (!mapRetryTimer) mapRetryTimer = setTimeout(() => { mapRetryTimer = null; renderMap(); }, 250); return; }
+        let coords = project?.latlong; if (typeof coords === 'string') { try { coords = JSON.parse(coords); } catch (_) { coords = null; } }
+        const lat = Number(coords?.lat ?? project?.lat), lng = Number(coords?.lng ?? project?.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) { destroyDetailMap(); el.innerHTML = '<div class="detail-map-note">Lokasi project belum tersedia.</div>'; return; }
+        if (detailMap && detailMap.getContainer() !== el) destroyDetailMap();
+        el = ensureCleanMapContainer(el); if (!el) return;
+        if (el.clientWidth < 20 || el.clientHeight < 20) { requestAnimationFrame(renderMap); return; }
         if (!detailMap) {
             el.innerHTML = '';
-            detailMap = L.map(el, {
-                zoomControl: true,
-                attributionControl: true,
-                dragging: true,
-                scrollWheelZoom: true,
-                doubleClickZoom: true,
-                touchZoom: true,
-                boxZoom: true,
-            });
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors',
-            }).addTo(detailMap);
-
-            const icon = L.icon({
-                iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-                iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41],
-            });
-            detailMap.__projectMarkerIcon = icon;
+            detailMap = L.map(el, { zoomControl:true, attributionControl:true, dragging:true, scrollWheelZoom:true, doubleClickZoom:true, touchZoom:true, boxZoom:true });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; OpenStreetMap contributors' }).addTo(detailMap);
+            detailMap.__projectMarkerIcon = L.icon({ iconRetinaUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png', iconUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png', shadowUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png', iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34], shadowSize:[41,41] });
         }
-
-        detailMap.setView([lat, lng], 13);
-        detailMap.invalidateSize(true);
-
+        detailMap.setView([lat,lng],13); detailMap.invalidateSize(true);
         if (detailMarker) detailMarker.remove();
-        detailMarker = L.marker([lat, lng], { icon: detailMap.__projectMarkerIcon })
-            .addTo(detailMap)
-            .bindPopup(project?.name || 'Project')
-            .openPopup();
-
-        requestAnimationFrame(() => detailMap?.invalidateSize(true));
-        setTimeout(() => detailMap?.invalidateSize(true), 100);
-        setTimeout(() => detailMap?.invalidateSize(true), 400);
+        detailMarker = L.marker([lat,lng], {icon:detailMap.__projectMarkerIcon}).addTo(detailMap).bindPopup(project?.name || 'Project').openPopup();
+        requestAnimationFrame(() => detailMap?.invalidateSize(true)); setTimeout(() => detailMap?.invalidateSize(true),100); setTimeout(() => detailMap?.invalidateSize(true),400);
     };
-
     const openLightbox = src => {
         let box = document.getElementById('detailImageLightbox');
-        if (!box) {
-            box = document.createElement('div');
-            box.id = 'detailImageLightbox';
-            box.className = 'detail-lightbox';
-            box.innerHTML = '<button type="button" class="detail-lightbox-close">×</button><img alt="Project image fullscreen">';
-            document.body.appendChild(box);
-            box.onclick = e => {
-                if (e.target === box || e.target.closest('.detail-lightbox-close')) box.classList.remove('open');
-            };
-        }
-        box.querySelector('img').src = src;
-        box.classList.add('open');
+        if (!box) { box=document.createElement('div'); box.id='detailImageLightbox'; box.className='detail-lightbox'; box.innerHTML='<button type="button" class="detail-lightbox-close">×</button><img alt="Project image fullscreen">'; document.body.appendChild(box); box.onclick=e=>{ if(e.target===box || e.target.closest('.detail-lightbox-close')) box.classList.remove('open'); }; }
+        box.querySelector('img').src=src; box.classList.add('open');
     };
-
-    const sync = () => {
-        ensureMedia();
-        const modal = document.getElementById('projectDetail');
-        if (!modal?.classList.contains('open')) return;
-        galleryIndex = 0;
-        renderGallery();
-        requestAnimationFrame(renderMap);
-    };
-
-    const modal = document.getElementById('projectDetail');
-    if (modal) {
-        new MutationObserver(() => setTimeout(sync, 30)).observe(modal, {
-            attributes: true,
-            attributeFilter: ['class', 'data-project-id']
-        });
-    }
-
-    document.addEventListener('click', e => {
-        const card = e.target.closest('.project[data-project-id]');
-        if (card && modal) {
-            modal.dataset.projectId = card.dataset.projectId;
-            setTimeout(sync, 0);
-        }
-    });
-
-    window.addEventListener('monitor:projects-updated', () => setTimeout(sync, 80));
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') document.getElementById('detailImageLightbox')?.classList.remove('open');
-        if (e.key === 'ArrowLeft') changeImage(-1);
-        if (e.key === 'ArrowRight') changeImage(1);
-    });
-
-    setTimeout(sync, 100);
+    const sync = () => { ensureMedia(); const modal=document.getElementById('projectDetail'); if(!modal?.classList.contains('open')) return; galleryIndex=0; renderGallery(); requestAnimationFrame(renderMap); };
+    const modal=document.getElementById('projectDetail');
+    if(modal) new MutationObserver(() => setTimeout(sync,30)).observe(modal,{attributes:true,attributeFilter:['class','data-project-id']});
+    document.addEventListener('click',e=>{ const card=e.target.closest('.project[data-project-id]'); if(card && modal){ modal.dataset.projectId=card.dataset.projectId; setTimeout(sync,0); } });
+    window.addEventListener('monitor:projects-updated',()=>setTimeout(sync,80));
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.getElementById('detailImageLightbox')?.classList.remove('open'); if(e.key==='ArrowLeft') changeImage(-1); if(e.key==='ArrowRight') changeImage(1); });
+    setTimeout(sync,100);
 })();
 </script>
