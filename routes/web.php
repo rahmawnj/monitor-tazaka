@@ -74,6 +74,5 @@ Route::middleware('pin.auth')->group(function () {
 
     Route::post('/admin/projects/{project}/images', [ProjectImageController::class, 'store'])->name('admin.projects.images.store');
     Route::match(['POST', 'PATCH'], '/admin/projects/{project}/images/reorder', [ProjectImageController::class, 'reorder'])->name('admin.projects.images.reorder');
-    Route::match(['POST', 'PATCH'], '/admin/projects/{project}/images/reorder', [ProjectImageController::class, 'reorder'])->name('admin.project-images.reorder');
     Route::delete('/admin/project-images/{projectImage}', [ProjectImageController::class, 'destroy'])->name('admin.project-images.destroy');
 });
