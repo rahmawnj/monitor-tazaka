@@ -11,13 +11,11 @@
         max-height: 360px;
     }
 
-    /* Project card: tampilkan hanya informasi yang relevan, tanpa label Tazaka Project. */
-    .project .project-label {
-        display: none;
-    }
-
-    .project .client {
-        display: none;
+    /* Rapikan kartu project di halaman monitor (/). */
+    .project .project-label,
+    .project .client,
+    .project .project-bottom {
+        display: none !important;
     }
 
     .project .chip {
@@ -125,8 +123,7 @@
 
         const container = document.getElementById('projects');
         if (container) {
-            // Hanya pantau card baru dari render realtime. Jangan observe subtree,
-            // karena applyCardData sendiri mengubah innerHTML dan bisa memicu loop.
+            // Hanya pantau card baru dari render realtime, bukan perubahan subtree.
             new MutationObserver(applyCardData).observe(container, { childList: true });
         }
 
