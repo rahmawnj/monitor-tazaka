@@ -23,12 +23,13 @@
     .detail-lightbox-close { position:absolute; top:18px; right:22px; width:40px; height:40px; border:1px solid rgba(255,255,255,.25); border-radius:50%; background:rgba(15,23,42,.8); color:#fff; font-size:24px; cursor:pointer; }
     .detail-map-note { height:210px; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:12px; }
     @media(max-width:900px) {
-        .detail-modal { height:auto !important; max-height:calc(100vh - 20px) !important; overflow:auto !important; }
+        .detail-modal { height:auto !important; max-height:calc(100vh - 20px) !important; overflow:auto !important; display:flex !important; flex-direction:column !important; }
+        .detail-modal > * { order:0; }
         .detail-modal > .detail-grid,
         .detail-modal > .detail-progress,
         .detail-modal > .detail-section,
         .detail-modal > .detail-hint { width:100%; max-width:100%; }
-        .detail-media-grid { position:static; width:100%; display:grid; grid-template-columns:1fr; margin-top:22px !important; }
+        .detail-media-grid { position:static; width:100%; display:grid; grid-template-columns:1fr; margin-top:22px !important; order:999 !important; flex-shrink:0; }
     }
     @media(max-width:700px) {
         .detail-modal { width:calc(100vw - 20px) !important; padding:22px !important; }
@@ -71,9 +72,6 @@
 
     const ensureCleanMapContainer = el => {
         if (!el) return null;
-        // If a previous script instance initialized this exact DOM node, Leaflet
-        // leaves _leaflet_id on it. Replacing the node is safer than calling L.map()
-        // on an already initialized container.
         if (el._leaflet_id && !detailMap) {
             const replacement = el.cloneNode(false);
             replacement.id = 'detailProjectMap';
@@ -150,7 +148,6 @@
             return;
         }
 
-        // Never call L.map() twice for the same container.
         if (detailMap && detailMap.getContainer() !== el) {
             destroyDetailMap();
         }
