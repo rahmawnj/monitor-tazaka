@@ -27,42 +27,39 @@
 </div>
 
 @once
-    @push('styles')
-        <style>
-            .wysiwyg{border:1px solid #263246;border-radius:10px;overflow:hidden;background:#0b1222;transition:.2s}
-            .wysiwyg:focus-within{border-color:#38bdf8;box-shadow:0 0 0 3px #38bdf81c}
-            .wysiwyg-toolbar{display:flex;gap:4px;align-items:center;padding:7px;border-bottom:1px solid #263246;background:#111a2b;flex-wrap:wrap}
-            .wysiwyg-toolbar button{border:0;border-radius:6px;background:transparent;color:#a7b3c7;padding:6px 9px;cursor:pointer;font-size:12px}
-            .wysiwyg-toolbar button:hover{background:#1e293b;color:#fff}
-            .wysiwyg-editor{min-height:150px;padding:12px;color:#fff;outline:0;line-height:1.6;overflow:auto}
-            .wysiwyg-editor:empty:before{content:attr(data-placeholder);color:#526078;pointer-events:none}
-            .wysiwyg-editor ul,.wysiwyg-editor ol{padding-left:24px}
-        </style>
-    @endpush
+<style>
+    .wysiwyg{border:1px solid #263246;border-radius:10px;overflow:hidden;background:#0b1222;transition:.2s}
+    .wysiwyg:focus-within{border-color:#38bdf8;box-shadow:0 0 0 3px #38bdf81c}
+    .wysiwyg-toolbar{display:flex;gap:4px;align-items:center;padding:7px;border-bottom:1px solid #263246;background:#111a2b;flex-wrap:wrap}
+    .wysiwyg-toolbar button{border:0;border-radius:6px;background:transparent;color:#a7b3c7;padding:6px 9px;cursor:pointer;font-size:12px}
+    .wysiwyg-toolbar button:hover{background:#1e293b;color:#fff}
+    .wysiwyg-editor{min-height:150px;padding:12px;color:#fff;outline:0;line-height:1.6;overflow:auto}
+    .wysiwyg-editor:empty:before{content:attr(data-placeholder);color:#526078;pointer-events:none}
+    .wysiwyg-editor ul,.wysiwyg-editor ol{padding-left:24px}
+</style>
 
-    @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                document.querySelectorAll('[data-wysiwyg]').forEach((wrapper) => {
-                    const editor = wrapper.querySelector('.wysiwyg-editor');
-                    const input = wrapper.querySelector('input[type="hidden"]');
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('[data-wysiwyg]').forEach((wrapper) => {
+            const editor = wrapper.querySelector('.wysiwyg-editor');
+            const input = wrapper.querySelector('input[type="hidden"]');
 
-                    const sync = () => {
-                        input.value = editor.innerHTML;
-                    };
+            const sync = () => {
+                input.value = editor.innerHTML;
+            };
 
-                    wrapper.querySelectorAll('[data-command]').forEach((button) => {
-                        button.addEventListener('mousedown', (event) => event.preventDefault());
-                        button.addEventListener('click', () => {
-                            editor.focus();
-                            document.execCommand(button.dataset.command, false, null);
-                            sync();
-                        });
-                    });
-
-                    editor.addEventListener('input', sync);
+            wrapper.querySelectorAll('[data-command]').forEach((button) => {
+                button.addEventListener('mousedown', (event) => event.preventDefault());
+                button.addEventListener('click', () => {
+                    editor.focus();
+                    document.execCommand(button.dataset.command, false, null);
+                    sync();
                 });
             });
-        </script>
-    @endpush
+
+            editor.addEventListener('input', sync);
+            sync();
+        });
+    });
+</script>
 @endonce
