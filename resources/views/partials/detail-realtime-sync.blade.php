@@ -6,10 +6,18 @@
 
     const clampProgress = value => Math.max(0, Math.min(100, Number(value) || 0));
 
+    // Decode entity-encoded WYSIWYG HTML until the actual markup is restored,
+    // then assign it through innerHTML so <p>, <strong>, <ul>, etc. are rendered.
     const decodeHtml = value => {
-        const textarea = document.createElement('textarea');
-        textarea.innerHTML = String(value ?? '');
-        return textarea.value;
+        let result = String(value ?? '');
+        for (let i = 0; i < 3; i++) {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = result;
+            const decoded = textarea.value;
+            if (decoded === result) break;
+            result = decoded;
+        }
+        return result;
     };
 
     const animateNumber = (element, from, to, duration = 900) => {
