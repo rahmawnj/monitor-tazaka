@@ -1,5 +1,4 @@
 <style>
-    /* Batasi tinggi map di daftar/list monitor agar tidak ikut memanjang. */
     .map-card .map-wrap {
         height: 360px;
         min-height: 360px;
@@ -11,7 +10,6 @@
         max-height: 360px;
     }
 
-    /* Rapikan kartu project di halaman monitor (/). */
     .project .project-label,
     .project .client {
         display: none !important;
@@ -71,7 +69,6 @@
         text-transform: none;
     }
 
-    /* Maksimal 6 kartu tampil pada awalnya agar monitor tidak kepanjangan. */
     #projects.monitor-projects-collapsed .project:nth-child(n + 7) {
         display: none !important;
     }
@@ -118,12 +115,22 @@
         return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
     };
 
+    const remainingDays = value => {
+        if (!value) return '-';
+        const raw = String(value).slice(0, 10);
+        const target = new Date(raw + 'T23:59:59');
+        if (Number.isNaN(target.getTime())) return '-';
+        const today = new Date();
+        const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const end = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+        return Math.ceil((end - start) / 86400000);
+    };
+
     const projects = () => Array.isArray(window.__monitorProjects) ? window.__monitorProjects : [];
 
     const syncMoreButton = () => {
         const container = document.getElementById('projects');
         if (!container) return;
-
         const cards = container.querySelectorAll('.project');
         const oldButton = document.querySelector('.projects-more-wrap');
 
@@ -173,15 +180,16 @@
 
             const month = formatMonth(project.project_month);
             const orderDate = formatDate(project.created_at);
+            const days = remainingDays(project.target_completion_date);
 
             const chip = card.querySelector('.chip');
             if (chip) {
                 const current = chip.dataset.cardValue || '';
-                const next = `MONTH|${month}`;
+                const next = `DAYS|${days}`;
                 if (current !== next) {
-                    chip.innerHTML = `MONTH<strong>${month}</strong>`;
+                    chip.innerHTML = `SISA HARI<strong>${days === '-' ? '-' : Math.max(0, days) + ' hari'}</strong>`;
                     chip.dataset.cardValue = next;
-                    chip.setAttribute('aria-label', `Project month ${month}`);
+                    chip.setAttribute('aria-label', `Sisa ${days} hari menuju target selesai`);
                 }
             }
 
@@ -207,8 +215,8 @@
                 if (columns[1]) {
                     const label = columns[1].querySelector('.project-bottom-label');
                     const value = columns[1].querySelector('.project-bottom-value');
-                    if (label) label.textContent = 'Tanggal Order';
-                    if (value) value.textContent = orderDate;
+                    if (label) label.textContent = 'Target Finish';
+                    if (value) value.textContent = formatDate(project.target_completion_date);
                 }
             }
         });
@@ -218,12 +226,8 @@
 
     const init = () => {
         applyCardData();
-
         const container = document.getElementById('projects');
-        if (container) {
-            new MutationObserver(applyCardData).observe(container, { childList: true });
-        }
-
+        if (container) new MutationObserver(applyCardData).observe(container, { childList: true });
         window.addEventListener('monitor:projects-updated', applyCardData);
     };
 
