@@ -70,6 +70,34 @@
         letter-spacing: 0;
         text-transform: none;
     }
+
+    /* Maksimal 6 kartu tampil pada awalnya agar monitor tidak kepanjangan. */
+    #projects.monitor-projects-collapsed .project:nth-child(n + 7) {
+        display: none !important;
+    }
+
+    .projects-more-wrap {
+        display: flex;
+        justify-content: center;
+        margin: 18px 0 4px;
+    }
+
+    .projects-more-button {
+        border: 1px solid rgba(56,189,248,.28);
+        background: rgba(15,23,42,.72);
+        color: #e2e8f0;
+        border-radius: 10px;
+        padding: 9px 18px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .projects-more-button:hover {
+        background: rgba(30,41,59,.9);
+        border-color: rgba(56,189,248,.48);
+    }
 </style>
 
 <script>
@@ -92,8 +120,52 @@
 
     const projects = () => Array.isArray(window.__monitorProjects) ? window.__monitorProjects : [];
 
+    const syncMoreButton = () => {
+        const container = document.getElementById('projects');
+        if (!container) return;
+
+        const cards = container.querySelectorAll('.project');
+        const oldButton = document.querySelector('.projects-more-wrap');
+
+        if (cards.length <= 6) {
+            container.classList.remove('monitor-projects-collapsed');
+            oldButton?.remove();
+            return;
+        }
+
+        if (!container.classList.contains('monitor-projects-expanded')) {
+            container.classList.add('monitor-projects-collapsed');
+        }
+
+        let wrap = document.querySelector('.projects-more-wrap');
+        if (!wrap) {
+            wrap = document.createElement('div');
+            wrap.className = 'projects-more-wrap';
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'projects-more-button';
+            button.addEventListener('click', () => {
+                const expanded = container.classList.toggle('monitor-projects-expanded');
+                container.classList.toggle('monitor-projects-collapsed', !expanded);
+                button.textContent = expanded ? 'Tampilkan lebih sedikit' : 'Tampilkan project lainnya';
+            });
+            wrap.appendChild(button);
+            container.insertAdjacentElement('afterend', wrap);
+        }
+
+        const button = wrap.querySelector('button');
+        if (button) {
+            button.textContent = container.classList.contains('monitor-projects-expanded')
+                ? 'Tampilkan lebih sedikit'
+                : 'Tampilkan project lainnya';
+        }
+    };
+
     const applyCardData = () => {
-        const cards = document.querySelectorAll('#projects .project');
+        const container = document.getElementById('projects');
+        if (!container) return;
+
+        const cards = container.querySelectorAll('.project');
         cards.forEach((card, index) => {
             const id = Number(card.dataset.projectId || 0);
             const project = projects().find(item => Number(item.id) === id) || projects()[index];
@@ -123,7 +195,6 @@
                 }
             }
 
-            // Footer kiri tetap nama PT/client. Footer kanan menjadi tanggal masuk order.
             const footer = card.querySelector('.project-bottom');
             if (footer) {
                 const columns = footer.children;
@@ -141,6 +212,8 @@
                 }
             }
         });
+
+        syncMoreButton();
     };
 
     const init = () => {
@@ -148,7 +221,6 @@
 
         const container = document.getElementById('projects');
         if (container) {
-            // Hanya pantau card baru dari render realtime, bukan perubahan subtree.
             new MutationObserver(applyCardData).observe(container, { childList: true });
         }
 
