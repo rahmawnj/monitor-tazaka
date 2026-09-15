@@ -1,5 +1,67 @@
 <script>
 (() => {
+    let progressAnimationFrame = null;
+
+    const animateDetailProgress = target => {
+        const progressText = document.getElementById('detailProgressText');
+        const progressBar = document.getElementById('detailProgressBar');
+        if (!progressText && !progressBar) return;
+
+        const end = Math.max(0, Math.min(100, Number(target) || 0));
+        const start = Math.max(0, Math.min(100, Number(
+            progressText?.dataset.progressValue ??
+            String(progressText?.textContent || '').replace(/[^0-9.-]/g, '')
+        ) || 0));
+
+        if (progressAnimationFrame) cancelAnimationFrame(progressAnimationFrame);
+
+        // If there is no actual change, just keep the current state.
+        if (start === end) {
+            if (progressText) {
+                progressText.textContent = end + '%';
+                progressText.dataset.progressValue = String(end);
+            }
+            if (progressBar) progressBar.style.width = end + '%';
+            return;
+        }
+
+        const duration = 850;
+        const started = performance.now();
+        const ease = t => 1 - Math.pow(1 - t, 3);
+
+        // Start the bar from the currently displayed percentage, then smoothly
+        // move it to the new percentage instead of jumping directly.
+        if (progressBar) {
+            progressBar.style.transition = 'none';
+            progressBar.style.width = start + '%';
+            void progressBar.offsetWidth;
+            progressBar.style.transition = `width ${duration}ms cubic-bezier(.22,1,.36,1)`;
+            progressBar.style.width = end + '%';
+        }
+
+        const step = now => {
+            const t = Math.min(1, (now - started) / duration);
+            const value = Math.round(start + (end - start) * ease(t));
+
+            if (progressText) {
+                progressText.textContent = value + '%';
+                progressText.dataset.progressValue = String(value);
+            }
+
+            if (t < 1) {
+                progressAnimationFrame = requestAnimationFrame(step);
+            } else {
+                progressAnimationFrame = null;
+                if (progressText) {
+                    progressText.textContent = end + '%';
+                    progressText.dataset.progressValue = String(end);
+                }
+            }
+        };
+
+        progressAnimationFrame = requestAnimationFrame(step);
+    };
+
     const syncDetailFields = (projects) => {
         const modal = document.getElementById('projectDetail');
         if (!modal?.classList.contains('open')) return;
@@ -32,9 +94,7 @@
             const date = new Date(raw + 'T00:00:00');
             if (Number.isNaN(date.getTime())) return String(value);
             return new Intl.DateTimeFormat('id-ID', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
+                day: '2-digit', month: 'long', year: 'numeric'
             }).format(date);
         };
 
@@ -44,8 +104,7 @@
             const date = new Date(raw + '-01T00:00:00');
             if (Number.isNaN(date.getTime())) return String(value);
             return new Intl.DateTimeFormat('id-ID', {
-                month: 'long',
-                year: 'numeric',
+                month: 'long', year: 'numeric'
             }).format(date);
         };
 
@@ -58,28 +117,11 @@
         setRich('#detailDescription', project.description || '-');
         setRich('#detailNotes', project.notes || '-');
 
-        const progress = Math.max(0, Math.min(100, Number(project.progress) || 0));
-        const progressText = document.getElementById('detailProgressText');
-        const progressBar = document.getElementById('detailProgressBar');
-
-        if (progressText) {
-            progressText.textContent = progress + '%';
-            progressText.dataset.progressValue = String(progress);
-        }
-        if (progressBar) {
-            progressBar.style.width = progress + '%';
-        }
+        animateDetailProgress(project.progress);
     };
 
-    const handleProjects = (projects) => {
-        const normalized = Array.isArray(projects) ? projects : [];
+    const handleProjects = projects => syncDetailFields(Array.isArray(projects) ? projects : []);
 
-        // Update immediately when the Reverb refresh replaces the shared project list.
-        syncDetailFields(normalized);
-    };
-
-    // Keep the existing shared-state mechanism, but make the modal sync independent
-    // from the order in which the other realtime scripts are initialized.
     try {
         const current = Array.isArray(window.__monitorProjects) ? window.__monitorProjects : [];
         let projects = current;
@@ -87,12 +129,12 @@
         Object.defineProperty(window, '__monitorProjects', {
             configurable: true,
             get: () => projects,
-            set: (value) => {
+            set: value => {
                 projects = Array.isArray(value) ? value : [];
                 window.dispatchEvent(new CustomEvent('monitor:projects-updated', {
-                    detail: projects,
+                    detail: projects
                 }));
-            },
+            }
         });
     } catch (e) {
         console.warn('Realtime detail state hook gagal:', e);
@@ -102,8 +144,6 @@
         handleProjects(event.detail);
     });
 
-    // The Reverb script refreshes /monitor/data when project.updated arrives.
-    // Hook the existing fetch instead of starting another polling loop/request.
     const originalFetch = window.fetch.bind(window);
     window.fetch = async (...args) => {
         const response = await originalFetch(...args);
@@ -125,7 +165,6 @@
         return response;
     };
 
-    // Sync once immediately in case the modal is already open when this partial loads.
     handleProjects(window.__monitorProjects || []);
 })();
 </script>
