@@ -59,6 +59,30 @@
         ? project.images.slice().sort((a,b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
         : [];
 
+    const destroyDetailMap = () => {
+        if (detailMap) {
+            try { detailMap.remove(); } catch (_) {}
+        }
+        detailMap = null;
+        detailMarker = null;
+        mapRetryTimer && clearTimeout(mapRetryTimer);
+        mapRetryTimer = null;
+    };
+
+    const ensureCleanMapContainer = el => {
+        if (!el) return null;
+        // If a previous script instance initialized this exact DOM node, Leaflet
+        // leaves _leaflet_id on it. Replacing the node is safer than calling L.map()
+        // on an already initialized container.
+        if (el._leaflet_id && !detailMap) {
+            const replacement = el.cloneNode(false);
+            replacement.id = 'detailProjectMap';
+            el.replaceWith(replacement);
+            return replacement;
+        }
+        return el;
+    };
+
     const ensureMedia = () => {
         const modal = document.getElementById('projectDetail');
         const grid = modal?.querySelector('.detail-grid');
@@ -99,7 +123,7 @@
 
     const renderMap = () => {
         const modal = document.getElementById('projectDetail');
-        const el = document.getElementById('detailProjectMap');
+        let el = document.getElementById('detailProjectMap');
         const project = currentProject();
         if (!modal || !el || !modal.classList.contains('open')) return;
 
@@ -121,27 +145,24 @@
         const lat = Number(coords?.lat ?? project?.lat);
         const lng = Number(coords?.lng ?? project?.lng);
         if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-            if (detailMap) {
-                detailMap.remove();
-                detailMap = null;
-                detailMarker = null;
-            }
+            destroyDetailMap();
             el.innerHTML = '<div class="detail-map-note">Lokasi project belum tersedia.</div>';
             return;
         }
 
-        // Leaflet must be initialized only after the modal/container has its final size.
+        // Never call L.map() twice for the same container.
+        if (detailMap && detailMap.getContainer() !== el) {
+            destroyDetailMap();
+        }
+
+        el = ensureCleanMapContainer(el);
+        if (!el) return;
+
         const width = el.clientWidth;
         const height = el.clientHeight;
         if (width < 20 || height < 20) {
             requestAnimationFrame(renderMap);
             return;
-        }
-
-        if (detailMap && !document.body.contains(el)) {
-            detailMap.remove();
-            detailMap = null;
-            detailMarker = null;
         }
 
         if (!detailMap) {
@@ -154,14 +175,13 @@
                 doubleClickZoom: true,
                 touchZoom: true,
                 boxZoom: true,
-            }).setView([lat, lng], 13);
+            });
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; OpenStreetMap contributors',
             }).addTo(detailMap);
 
-            // Explicit marker assets avoid Leaflet's default relative icon-path issue.
             const icon = L.icon({
                 iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
                 iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -178,8 +198,10 @@
         detailMap.invalidateSize(true);
 
         if (detailMarker) detailMarker.remove();
-        detailMarker = L.marker([lat, lng], { icon: detailMap.__projectMarkerIcon }).addTo(detailMap);
-        detailMarker.bindPopup(project?.name || 'Project').openPopup();
+        detailMarker = L.marker([lat, lng], { icon: detailMap.__projectMarkerIcon })
+            .addTo(detailMap)
+            .bindPopup(project?.name || 'Project')
+            .openPopup();
 
         requestAnimationFrame(() => detailMap?.invalidateSize(true));
         setTimeout(() => detailMap?.invalidateSize(true), 100);
@@ -208,7 +230,7 @@
         if (!modal?.classList.contains('open')) return;
         galleryIndex = 0;
         renderGallery();
-        requestAnimationFrame(() => renderMap());
+        requestAnimationFrame(renderMap);
     };
 
     const modal = document.getElementById('projectDetail');
