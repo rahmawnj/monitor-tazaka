@@ -1,22 +1,21 @@
+<style>
+.detail-media-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:14px;margin-top:22px}.detail-gallery,.detail-location-map{position:relative;min-width:0;overflow:hidden;border:1px solid #1e293b;border-radius:16px;background:#080f1c}.detail-gallery{min-height:250px}.detail-gallery img{display:block;width:100%;height:250px;object-fit:cover;cursor:zoom-in}.detail-gallery-empty{height:250px;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:12px}.detail-gallery-nav{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 10px;pointer-events:none}.detail-gallery-nav button{pointer-events:auto;width:34px;height:34px;border:1px solid rgba(255,255,255,.2);border-radius:50%;background:rgba(2,6,23,.72);color:#fff;cursor:pointer;font-size:20px}.detail-gallery-count{position:absolute;right:10px;bottom:10px;padding:5px 8px;border-radius:8px;background:rgba(2,6,23,.78);color:#e2e8f0;font-size:10px}.detail-location-map{min-height:250px;touch-action:auto}.detail-location-map #detailProjectMap{width:100%;height:250px;cursor:grab}.detail-location-map #detailProjectMap:active{cursor:grabbing}.detail-lightbox{position:fixed;inset:0;z-index:7000;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.9)}.detail-lightbox.open{display:flex}.detail-lightbox img{max-width:94vw;max-height:90vh;object-fit:contain;border-radius:12px}.detail-lightbox-close{position:absolute;top:18px;right:22px;width:40px;height:40px;border:1px solid rgba(255,255,255,.25);border-radius:50%;background:rgba(15,23,42,.8);color:#fff;font-size:24px;cursor:pointer}@media(max-width:700px){.detail-media-grid{grid-template-columns:1fr}}
+</style>
 <script>
-(() => {
-    const syncProjectId = (projectId) => {
-        const modal = document.getElementById('projectDetail');
-        if (!modal || !projectId) return;
-        modal.dataset.projectId = String(projectId);
-    };
-
-    document.addEventListener('click', event => {
-        const card = event.target.closest('.project[data-project-id]');
-        if (!card) return;
-        syncProjectId(card.dataset.projectId);
-    });
-
-    document.addEventListener('keydown', event => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        const card = document.activeElement?.closest?.('.project[data-project-id]');
-        if (!card) return;
-        syncProjectId(card.dataset.projectId);
-    });
+(()=>{
+ let detailMap=null,detailMarker=null,galleryIndex=0;
+ const list=()=>Array.isArray(window.__monitorProjects)?window.__monitorProjects:[];
+ const modal=()=>document.getElementById('projectDetail');
+ const current=()=>{const id=Number(modal()?.dataset.projectId||0);return list().find(p=>Number(p.id)===id)||null};
+ const url=image=>image?.url?String(image.url):image?.path?'/storage/'+String(image.path).replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/') :'';
+ const images=p=>Array.isArray(p?.images)?p.images.slice().sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0)):[];
+ const ensure=()=>{const m=modal(),grid=m?.querySelector('.detail-grid');if(!m||!grid||m.querySelector('.detail-media-grid'))return;const wrap=document.createElement('div');wrap.className='detail-media-grid';wrap.innerHTML='<div class="detail-gallery" id="detailGallery"><div class="detail-gallery-empty">Belum ada image project.</div></div><div class="detail-location-map"><div id="detailProjectMap"></div></div>';grid.insertAdjacentElement('afterend',wrap);};
+ const gallery=()=>{const box=document.getElementById('detailGallery'),imgs=images(current());if(!box)return;if(!imgs.length){box.innerHTML='<div class="detail-gallery-empty">Belum ada image project.</div>';return}galleryIndex=Math.max(0,Math.min(galleryIndex,imgs.length-1));box.innerHTML='<img src="'+url(imgs[galleryIndex])+'" alt="Project image" loading="eager"><div class="detail-gallery-nav"><button type="button" data-prev>‹</button><button type="button" data-next>›</button></div><div class="detail-gallery-count">'+(galleryIndex+1)+' / '+imgs.length+'</div>';box.querySelector('[data-prev]').onclick=e=>{e.stopPropagation();galleryIndex=(galleryIndex-1+imgs.length)%imgs.length;gallery()};box.querySelector('[data-next]').onclick=e=>{e.stopPropagation();galleryIndex=(galleryIndex+1)%imgs.length;gallery()};box.querySelector('img').onclick=e=>lightbox(e.currentTarget.src)};
+ const lightbox=src=>{let b=document.getElementById('detailImageLightbox');if(!b){b=document.createElement('div');b.id='detailImageLightbox';b.className='detail-lightbox';b.innerHTML='<button class="detail-lightbox-close">×</button><img alt="Project image fullscreen">';document.body.appendChild(b);b.onclick=e=>{if(e.target===b||e.target.closest('.detail-lightbox-close'))b.classList.remove('open')}}b.querySelector('img').src=src;b.classList.add('open')};
+ const map=()=>{const p=current(),el=document.getElementById('detailProjectMap');if(!el||typeof L==='undefined')return;let c=p?.latlong;if(typeof c==='string'){try{c=JSON.parse(c)}catch(_){c=null}}const lat=Number(c?.lat),lng=Number(c?.lng);if(!Number.isFinite(lat)||!Number.isFinite(lng)){if(detailMap){detailMap.remove();detailMap=null;detailMarker=null}el.innerHTML='<div style="height:250px;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:12px">Lokasi project belum tersedia.</div>';return}if(!detailMap){el.innerHTML='';detailMap=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:true,dragging:true,touchZoom:true,doubleClickZoom:true,boxZoom:true,keyboard:true}).setView([lat,lng],14);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(detailMap)}else{detailMap.setView([lat,lng],14);detailMap.invalidateSize(true)}if(detailMarker)detailMarker.remove();detailMarker=L.marker([lat,lng]).addTo(detailMap).bindPopup(p?.name||'Project');setTimeout(()=>detailMap?.invalidateSize(true),150)};
+ const sync=()=>{ensure();const m=modal();if(!m?.classList.contains('open'))return;galleryIndex=0;gallery();setTimeout(map,80)};
+ document.addEventListener('click',e=>{const card=e.target.closest('.project[data-project-id]');if(card&&modal())modal().dataset.projectId=card.dataset.projectId});
+ const m=modal();if(m)new MutationObserver(()=>setTimeout(sync,30)).observe(m,{attributes:true,attributeFilter:['class','data-project-id']});
+ window.addEventListener('monitor:projects-updated',()=>setTimeout(sync,80));document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('detailImageLightbox')?.classList.remove('open');if(e.key==='ArrowLeft'){galleryIndex--;gallery()}if(e.key==='ArrowRight'){galleryIndex++;gallery()}});setTimeout(sync,100);
 })();
 </script>
