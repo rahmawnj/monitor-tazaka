@@ -15,11 +15,19 @@
 .admin-header .profile-menu form{margin:0}
 .admin-header .logout-item{width:100%;display:flex;align-items:center;gap:9px;border:0;border-radius:8px;background:transparent;color:#cbd5e1;padding:10px 11px;cursor:pointer;text-align:left;font:inherit;font-size:12px;font-weight:750}
 .admin-header .logout-item:hover{background:#1e293b;color:#fff}
+.admin-project-search{display:inline-flex;align-items:center;gap:7px;margin-left:auto}
+.admin-project-search input{width:210px;height:38px;padding:0 12px;border:1px solid #263246;border-radius:10px;background:#0d1424;color:#e2e8f0;outline:none;font:inherit;font-size:12px}
+.admin-project-search input::placeholder{color:#64748b}
+.admin-project-search input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.admin-project-search button{height:38px;padding:0 13px;border:0;border-radius:10px;background:#2563eb;color:#fff;cursor:pointer;font:inherit;font-size:12px;font-weight:800}
+.admin-project-search button:hover{background:#1d4ed8}
 @media(max-width:760px){
     .admin-header{margin-bottom:18px}
     .admin-header .brand-name{font-size:15px}
     .admin-header .profile-name{display:none}
     .admin-header .profile-button{padding:6px}
+    .admin-project-search{width:100%;margin:0}
+    .admin-project-search input{flex:1;width:auto}
 }
 </style>
 
@@ -49,17 +57,38 @@
 (() => {
     const profile = document.getElementById('profile');
     const profileButton = document.getElementById('profileButton');
-    if (!profile || !profileButton) return;
+    if (profile && profileButton) {
+        profileButton.addEventListener('click', event => {
+            event.stopPropagation();
+            const open = profile.classList.toggle('open');
+            profileButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
 
-    profileButton.addEventListener('click', event => {
-        event.stopPropagation();
-        const open = profile.classList.toggle('open');
-        profileButton.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
+        document.addEventListener('click', () => {
+            profile.classList.remove('open');
+            profileButton.setAttribute('aria-expanded', 'false');
+        });
+    }
 
-    document.addEventListener('click', () => {
-        profile.classList.remove('open');
-        profileButton.setAttribute('aria-expanded', 'false');
-    });
+    if (window.location.pathname === '/admin/projects') {
+        const tabs = document.querySelector('.tabs');
+        if (tabs && !tabs.querySelector('.admin-project-search')) {
+            const params = new URLSearchParams(window.location.search);
+            const currentSearch = params.get('search') || '';
+            const form = document.createElement('form');
+            form.className = 'admin-project-search';
+            form.method = 'GET';
+            form.action = '/admin/projects';
+            form.innerHTML = `<input type="search" name="search" value="${currentSearch.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="Cari project..." aria-label="Cari project"><button type="submit">Cari</button>`;
+            form.addEventListener('submit', () => {
+                const input = form.querySelector('input');
+                if (input) {
+                    const value = input.value.trim();
+                    form.action = value ? '/admin/projects?tab=all' : '/admin/projects?tab=all';
+                }
+            });
+            tabs.appendChild(form);
+        }
+    }
 })();
 </script>
