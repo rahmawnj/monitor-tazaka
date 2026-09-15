@@ -3,7 +3,6 @@
     if (window.__monitorRenderGuardInstalled) return;
     window.__monitorRenderGuardInstalled = true;
 
-    let currentRender = null;
     let lastRenderSignature = '';
     let lastProjectUpdatedAt = 0;
 
@@ -15,40 +14,49 @@
         images: p?.images
     })));
 
-    const installRender = fn => {
-        if (typeof fn !== 'function' || currentRender === fn) return;
-        currentRender = fn;
-        window.render = function (projects, summary) {
+    const wrapRender = fn => {
+        if (typeof fn !== 'function') return fn;
+        const wrapped = function (projects, summary) {
             const signature = signatureOf(projects);
             if (signature && signature === lastRenderSignature) return;
             lastRenderSignature = signature;
-            return currentRender.apply(this, arguments);
+            return fn.apply(this, arguments);
         };
+        return wrapped;
     };
 
     try {
         const descriptor = Object.getOwnPropertyDescriptor(window, 'render');
         if (!descriptor || descriptor.configurable !== false) {
-            let storedRender = descriptor?.value ?? null;
+            let initialValue = descriptor?.value ?? null;
             Object.defineProperty(window, 'render', {
                 configurable: true,
-                get() { return storedRender; },
+                get() { return initialValue; },
                 set(fn) {
-                    storedRender = fn;
-                    installRender(fn);
+                    if (typeof fn !== 'function') {
+                        initialValue = fn;
+                        return;
+                    }
+                    const wrapped = wrapRender(fn);
+                    initialValue = wrapped;
+                    Object.defineProperty(window, 'render', {
+                        configurable: true,
+                        writable: true,
+                        value: wrapped
+                    });
                 }
             });
-            if (storedRender) installRender(storedRender);
         }
     } catch (e) {
         console.warn('Monitor render guard tidak terpasang:', e);
     }
 
     if (typeof Pusher !== 'undefined' && Pusher.Channel) {
-        const originalBind = Pusher.Channel.prototype.bind;
-        if (!Pusher.Channel.prototype.__monitorProjectUpdatedGuard) {
-            Pusher.Channel.prototype.__monitorProjectUpdatedGuard = true;
-            Pusher.Channel.prototype.bind = function (eventName, callback, context) {
+        const prototype = Pusher.Channel.prototype;
+        if (!prototype.__monitorProjectUpdatedGuard) {
+            const originalBind = prototype.bind;
+            prototype.__monitorProjectUpdatedGuard = true;
+            prototype.bind = function (eventName, callback, context) {
                 if (eventName !== 'project.updated' || typeof callback !== 'function') {
                     return originalBind.call(this, eventName, callback, context);
                 }
