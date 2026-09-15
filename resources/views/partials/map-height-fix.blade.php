@@ -12,6 +12,10 @@
     }
 
     /* Project card: ganti ornamen chip emas dengan data project yang lebih berguna. */
+    .project .project-label {
+        display: none;
+    }
+
     .project .chip {
         width: 92px;
         height: 42px;
