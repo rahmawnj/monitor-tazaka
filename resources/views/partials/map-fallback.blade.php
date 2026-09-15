@@ -29,7 +29,6 @@
             return;
         }
 
-        // Fallback: trigger the same project-detail event used by the monitor.
         window.dispatchEvent(new CustomEvent('monitor:open-project-detail', {
             detail: { project }
         }));
@@ -70,6 +69,16 @@
                     '<br>Progress: ' + progress + '%'
                 );
 
+                // Hover = preview popup di atas pin.
+                marker.on('mouseover', function () {
+                    marker.openPopup();
+                });
+
+                marker.on('mouseout', function () {
+                    marker.closePopup();
+                });
+
+                // Click = buka modal detail project yang besar.
                 marker.on('click', function () {
                     openProjectDetail(project);
                 });
