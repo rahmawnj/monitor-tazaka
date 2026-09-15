@@ -13,9 +13,16 @@
 
     /* Rapikan kartu project di halaman monitor (/). */
     .project .project-label,
-    .project .client,
-    .project .project-bottom {
+    .project .client {
         display: none !important;
+    }
+
+    .project .project-bottom {
+        display: flex !important;
+    }
+
+    .project .project-bottom > div:last-child {
+        text-align: right !important;
     }
 
     .project .chip {
@@ -113,6 +120,24 @@
                 if (current !== next) {
                     projectId.innerHTML = `ORDER<strong>${orderDate}</strong>`;
                     projectId.dataset.cardValue = next;
+                }
+            }
+
+            // Footer kiri tetap nama PT/client. Footer kanan menjadi tanggal masuk order.
+            const footer = card.querySelector('.project-bottom');
+            if (footer) {
+                const columns = footer.children;
+                if (columns[0]) {
+                    const label = columns[0].querySelector('.project-bottom-label');
+                    const value = columns[0].querySelector('.project-bottom-value');
+                    if (label) label.textContent = 'PT';
+                    if (value) value.textContent = project.client || '-';
+                }
+                if (columns[1]) {
+                    const label = columns[1].querySelector('.project-bottom-label');
+                    const value = columns[1].querySelector('.project-bottom-value');
+                    if (label) label.textContent = 'Tanggal Order';
+                    if (value) value.textContent = orderDate;
                 }
             }
         });
