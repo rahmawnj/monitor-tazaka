@@ -4,6 +4,7 @@
 @include('partials.detail-realtime-sync')
 @include('partials.detail-image-realtime-fix')
 @include('partials.detail-media-fix')
+@include('partials.detail-gallery-thumbnails')
 @include('partials.map-fallback')
 @include('partials.company-brand-fix')
 @include('partials.map-height-fix')
