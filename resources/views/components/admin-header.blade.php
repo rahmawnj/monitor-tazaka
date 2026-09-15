@@ -80,8 +80,8 @@
                 const form = document.createElement('form');
                 form.className = 'admin-project-search';
                 form.method = 'GET';
-                form.action = '/admin/projects?tab=all';
-                form.innerHTML = `<input type="search" name="search" value="${currentSearch.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="Cari project..." aria-label="Cari project"><button type="submit">Cari</button>`;
+                form.action = '/admin/projects';
+                form.innerHTML = `<input type="hidden" name="tab" value="all"><input type="search" name="search" value="${currentSearch.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="Cari project..." aria-label="Cari project"><button type="submit">Cari</button>`;
                 tabs.appendChild(form);
             }
         }
