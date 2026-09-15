@@ -2,3 +2,4 @@
 @include('partials.monitor-page')
 @include('partials.last-updated')
 @include('partials.detail-realtime-sync')
+@include('partials.map-fallback')
