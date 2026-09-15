@@ -11,8 +11,12 @@
         max-height: 360px;
     }
 
-    /* Project card: ganti ornamen chip emas dengan data project yang lebih berguna. */
+    /* Project card: tampilkan hanya informasi yang relevan, tanpa label Tazaka Project. */
     .project .project-label {
+        display: none;
+    }
+
+    .project .client {
         display: none;
     }
 
@@ -91,7 +95,7 @@
             if (!project) return;
 
             const month = formatMonth(project.project_month);
-            const target = formatDate(project.target_completion_date);
+            const orderDate = formatDate(project.created_at);
 
             const chip = card.querySelector('.chip');
             if (chip) {
@@ -107,9 +111,9 @@
             const projectId = card.querySelector('.project-id');
             if (projectId) {
                 const current = projectId.dataset.cardValue || '';
-                const next = `TARGET|${target}`;
+                const next = `ORDER|${orderDate}`;
                 if (current !== next) {
-                    projectId.innerHTML = `TARGET<strong>${target}</strong>`;
+                    projectId.innerHTML = `ORDER<strong>${orderDate}</strong>`;
                     projectId.dataset.cardValue = next;
                 }
             }
