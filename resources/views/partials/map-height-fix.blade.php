@@ -4,6 +4,8 @@
     .project .project-label, .project .client { display:none !important; }
     .project .project-bottom { display:flex !important; }
     .project .project-bottom > div:last-child { text-align:right !important; }
+    .project .pname { max-width:100% !important; width:100%; padding-right:0; overflow-wrap:anywhere; word-break:break-word; }
+    .project .project-top > div:first-child { flex:1 1 auto; min-width:0; }
     .project .chip { width:92px; height:42px; margin-top:16px; padding:7px 10px; border-radius:9px; background:rgba(15,23,42,.78); border:1px solid rgba(56,189,248,.22); box-shadow:none; color:#94a3b8; font-size:8px; line-height:1.25; letter-spacing:.12em; text-transform:uppercase; }
     .project .chip::before, .project .chip::after { display:none; }
     .project .chip strong { display:block; margin-top:2px; color:#e2e8f0; font-size:10px; letter-spacing:.02em; text-transform:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
