@@ -5,3 +5,4 @@
 @include('partials.detail-image-realtime-fix')
 @include('partials.map-fallback')
 @include('partials.company-brand-fix')
+@include('partials.map-height-fix')
