@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class ProjectImage extends Model
 {
@@ -14,9 +15,18 @@ class ProjectImage extends Model
         'sort_order',
     ];
 
+    protected $appends = [
+        'url',
+    ];
+
     protected $casts = [
         'sort_order' => 'integer',
     ];
+
+    public function getUrlAttribute(): string
+    {
+        return Storage::disk('public')->url($this->path);
+    }
 
     public function project(): BelongsTo
     {
