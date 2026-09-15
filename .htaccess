@@ -1,9 +1,9 @@
-RewriteEngine On
-DirectoryIndex public/index.php
+<IfModule mod_rewrite.c>
+    RewriteEngine On
 
-# Jangan expose /public pada URL.
-RewriteRule ^public(?:/|$) - [L]
-
-# Jalankan Laravel dari folder public secara internal.
-RewriteRule ^$ public/index.php [L]
-RewriteRule ^(.+)$ public/$1 [L]
+    # Jika request belum menuju folder public, rewrite ke public.
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
+</IfModule>
