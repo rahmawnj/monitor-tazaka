@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Masukkan PIN — Monitor Tazaka</title>
+    <title>Masuk — Monitor Tazaka</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -32,8 +32,8 @@
             padding: 15px 16px;
             border: 1px solid #d1d5db;
             border-radius: 12px;
-            font-size: 24px;
-            letter-spacing: 8px;
+            font-size: 18px;
+            letter-spacing: 2px;
             text-align: center;
             outline: none;
         }
@@ -56,18 +56,16 @@
 <body>
     <main class="card">
         <h1>Monitor Tazaka</h1>
-        <p>Masukkan PIN untuk membuka dashboard.</p>
+        <p>Masukkan password untuk membuka dashboard.</p>
 
         <form method="POST" action="{{ route('login.submit') }}">
             @csrf
             <input
                 type="password"
                 name="pin"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                maxlength="20"
+                maxlength="255"
                 autocomplete="current-password"
-                placeholder="••••••"
+                placeholder="Masukkan password"
                 autofocus
                 required
             >
