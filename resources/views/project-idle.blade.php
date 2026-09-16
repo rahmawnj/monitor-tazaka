@@ -25,6 +25,7 @@
 const dataUrl=@json(route('monitor.data'));
 const projectsUrl=@json(route('monitor'));
 const rotationMs=15000;
+const refreshMs=3000;
 let projects=[];let current=0;let timer=null;let paused=false;let transitionTimer=null;
 const stage=document.getElementById('stage');const dots=document.getElementById('dots');const counter=document.getElementById('counter');
 function esc(v){return String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
@@ -39,7 +40,7 @@ function restartTimer(){clearInterval(timer);if(!paused&&projects.length>1)timer
 async function loadProjects(keepCurrent=true){try{const res=await fetch(dataUrl,{headers:{Accept:'application/json'},cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);const json=await res.json();const previousId=projects[current]?.id;projects=Array.isArray(json.projects)?json.projects:[];let next=projects.findIndex(p=>p.id===previousId);if(!keepCurrent||next<0)next=0;show(next,false);restartTimer()}catch(e){console.error('Project showcase:',e)}}
 document.getElementById('backBtn').addEventListener('click',()=>{window.location.href=projectsUrl});
 document.getElementById('pauseBtn').addEventListener('click',()=>{paused=!paused;document.getElementById('pauseBtn').textContent=paused?'▶ Play':'Ⅱ Pause';restartTimer()});
-loadProjects(false);setInterval(()=>loadProjects(true),30000);
+loadProjects(false);setInterval(()=>loadProjects(true),refreshMs);
 try{const host=window.location.hostname;const port=@json((int) env('REVERB_PORT',8080));const key=@json(env('REVERB_APP_KEY'));if(window.Pusher&&key){const pusher=new Pusher(key,{wsHost:host,wsPort:port,wssPort:port,forceTLS:false,enabledTransports:['ws','wss']});const channel=pusher.subscribe('monitor');channel.bind('project.updated',()=>loadProjects(true));}}catch(e){console.warn('Realtime unavailable:',e)}
 </script>
 </body>
