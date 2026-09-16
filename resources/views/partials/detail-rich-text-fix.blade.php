@@ -74,7 +74,7 @@
     };
 
     document.addEventListener('click', event => {
-        const card = event.target.closest('.project[data-project-id]');
+        const card = event.target.closest('.project-row[data-project-id]');
         if (!card) return;
         const projects = Array.isArray(window.__monitorProjects) ? window.__monitorProjects : [];
         const project = projects.find(item => String(item.id) === String(card.dataset.projectId));
