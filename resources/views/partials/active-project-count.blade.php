@@ -14,7 +14,7 @@
             count.className = 'active-project-count';
             heading.appendChild(count);
         }
-        count.textContent = projects.querySelectorAll('.project').length;
+        count.textContent = projects.querySelectorAll('.project-row').length;
     };
 
     const init = () => {
@@ -22,7 +22,7 @@
         const projects = document.getElementById('projects');
         if (projects && !projects.__activeProjectCountObserver) {
             projects.__activeProjectCountObserver = new MutationObserver(syncActiveProjectCount);
-            projects.__activeProjectCountObserver.observe(projects, {childList:true});
+            projects.__activeProjectCountObserver.observe(projects, {childList:true,subtree:true});
         }
     };
 
