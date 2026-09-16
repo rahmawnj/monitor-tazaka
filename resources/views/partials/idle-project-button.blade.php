@@ -44,7 +44,7 @@
     }
 </style>
 
-<a class="idle-project-fab" href="{{ route('monitor.idle') }}" aria-label="Buka Project Showcase">
+<a class="idle-project-fab" href="{{ url('/projects/idle') }}" aria-label="Buka Project Showcase">
     <span class="idle-project-fab-icon">▶</span>
     <span>Project Showcase</span>
 </a>
