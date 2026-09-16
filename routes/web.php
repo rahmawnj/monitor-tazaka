@@ -29,6 +29,9 @@ Route::get('/storage/{path}', function (string $path) {
 Route::get('/', [MonitorController::class, 'index'])->name('monitor');
 Route::get('/monitor', [MonitorController::class, 'index']);
 Route::get('/monitor/data', [MonitorController::class, 'data'])->name('monitor.data');
+Route::get('/projects/idle', function () {
+    return view('project-idle');
+})->name('projects.idle');
 
 Route::get('/login', function () {
     if (request()->session()->get('admin_authenticated') === true) {
